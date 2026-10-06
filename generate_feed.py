@@ -19,7 +19,7 @@ observer.elevation = 5
 
 today = datetime.datetime.now(tz).date()
 
-for i in range(5):  # Buat entri untuk 5 hari ke depan
+for i in range(4, -1, -1):  # Buat entri untuk 5 hari ke depan
   target_date = today + datetime.timedelta(days=i)
   observer.date = target_date.strftime("%Y/%m/%d")
 
