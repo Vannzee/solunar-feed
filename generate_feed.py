@@ -23,7 +23,7 @@ today = now_time.date()
 HARI_INDO = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
 BULAN_INDO = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"]
 
-JUMLAH_HARI = 10
+JUMLAH_HARI = 14
 
 def get_fish_activity(target_date):
     d = ephem.Date(target_date.strftime("%Y/%m/%d"))
