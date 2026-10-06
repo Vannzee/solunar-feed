@@ -130,7 +130,7 @@ def main():
 
         # Tidak ada angka karangan lagi: kalau hari ini tidak ada di tabel, koefisien dikosongkan.
         coef = coefs.get(target_date)
-        coef_title = f"Koefisien: {coef} | " if coef else ""
+        coef_title = f"Aktivitas Ikan: {coef} | " if coef else ""
         coef_desc = f"<b>Koefisien Pasang Surut:</b> {coef}<br><br>" if coef else ""
 
         tanggal_str = f"{HARI_INDO[target_date.weekday()]}, {target_date.day:02d} {BULAN_INDO[target_date.month]}"
