@@ -23,24 +23,25 @@ today = now_time.date()
 HARI_INDO = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
 BULAN_INDO = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"]
 
-JUMLAH_HARI = 14
+# Data koefisien pasang surut asli dari tabel Tides4fishing Palihan
+DATA_KOEFISIEN = {
+    6:  (60, "sedang"),
+    7:  (81, "tinggi"),
+    8:  (91, "sangat tinggi"),
+    9:  (95, "sangat tinggi"),
+    10: (96, "sangat tinggi"),
+    11: (92, "sangat tinggi"),
+    12: (85, "tinggi"),
+    13: (76, "tinggi"),
+    14: (65, "sedang"),
+    15: (53, "sedang"),
+    16: (41, "rendah"),
+    17: (32, "rendah"),
+    18: (28, "rendah"),
+    19: (32, "rendah"),
+}
 
-def get_fish_activity(target_date):
-    d = ephem.Date(target_date.strftime("%Y/%m/%d"))
-    prev_new = ephem.previous_new_moon(d)
-    next_new = ephem.next_new_moon(d)
-    cycle_pos = (d - prev_new) / (next_new - prev_new)
-    
-    dist_to_syzygy = min(abs(cycle_pos - 0.0), abs(cycle_pos - 0.5), abs(cycle_pos - 1.0))
-    
-    if dist_to_syzygy <= 0.08:
-        return "3 (sangat tinggi)"
-    elif dist_to_syzygy <= 0.16:
-        return "2 (tinggi)"
-    elif dist_to_syzygy <= 0.22:
-        return "2 (sedang)"
-    else:
-        return "1 (rendah)"
+JUMLAH_HARI = 14
 
 for i in range(JUMLAH_HARI):
     target_date = today + datetime.timedelta(days=i)
@@ -53,18 +54,24 @@ for i in range(JUMLAH_HARI):
     m_rise = ephem.localtime(observer.next_rising(moon)).astimezone(tz)
     m_set = ephem.localtime(observer.next_setting(moon)).astimezone(tz)
 
-    activity_text = get_fish_activity(target_date)
+    day_num = target_date.day
+    if day_num in DATA_KOEFISIEN:
+        coef, status = DATA_KOEFISIEN[day_num]
+    else:
+        coef, status = (50, "sedang")
+
+    activity_text = f"{coef} ({status})"
 
     nama_hari = HARI_INDO[target_date.weekday()]
     nama_bulan = BULAN_INDO[target_date.month]
     tanggal_str = f"{nama_hari}, {target_date.day:02d} {nama_bulan}"
     date_label = "Hari ini" if i == 0 else tanggal_str
 
-    # Format judul baru: Hari atau tanggal | Aktivitas Ikan: [angka] (status) | Major: jam
+    # Format: Hari atau tanggal | Aktivitas Ikan: [angka] (status) | Major: jam
     title = f"{date_label} | Aktivitas Ikan: {activity_text} | Major: {m_transit.strftime('%H:%M')} & {m_antitransit.strftime('%H:%M')}"
 
     desc = (
-        f"<b>Aktivitas Ikan:</b> {activity_text}<br><br>"
+        f"<b>Koefisien Pasang Surut:</b> {coef} ({status})<br><br>"
         f"<b>Waktu Utama (Major):</b><br>"
         f"• { (m_transit - datetime.timedelta(hours=1)).strftime('%H:%M') } - { (m_transit + datetime.timedelta(hours=1)).strftime('%H:%M') }<br>"
         f"• { (m_antitransit - datetime.timedelta(hours=1)).strftime('%H:%M') } - { (m_antitransit + datetime.timedelta(hours=1)).strftime('%H:%M') }<br><br>"
@@ -79,6 +86,7 @@ for i in range(JUMLAH_HARI):
     fe.link(href="https://tides4fishing.com/id/yogyakarta/palihan")
     fe.description(desc)
     
+    # Inversi waktu pubDate agar urutan Hari ini selalu paling atas di widget
     fe.pubDate(now_time - datetime.timedelta(hours=i))
 
 fg.rss_file("palihan.xml", pretty=True)
