@@ -1,13 +1,14 @@
 import datetime
+import re
 from zoneinfo import ZoneInfo
 import ephem
 from feedgen.feed import FeedGenerator
+import requests
+from bs4 import BeautifulSoup
 
 fg = FeedGenerator()
 fg.title("Solunar Palihan")
-fg.link(
-    href="https://tides4fishing.com/id/yogyakarta/palihan", rel="alternate"
-)
+fg.link(href="https://tides4fishing.com/id/yogyakarta/palihan", rel="alternate")
 fg.description("Prediksi jam makan ikan pantai selatan")
 fg.language("id")
 
@@ -23,24 +24,54 @@ today = now_time.date()
 HARI_INDO = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
 BULAN_INDO = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"]
 
-# Data koefisien pasang surut asli dari tabel Tides4fishing Palihan
-DATA_KOEFISIEN = {
-    6:  (60, "sedang"),
-    7:  (81, "tinggi"),
-    8:  (91, "sangat tinggi"),
-    9:  (95, "sangat tinggi"),
-    10: (96, "sangat tinggi"),
-    11: (92, "sangat tinggi"),
-    12: (85, "tinggi"),
-    13: (76, "tinggi"),
-    14: (65, "sedang"),
-    15: (53, "sedang"),
-    16: (41, "rendah"),
-    17: (32, "rendah"),
-    18: (28, "rendah"),
-    19: (32, "rendah"),
+STATUS_MAP = {
+    "very high": "sangat tinggi",
+    "high": "tinggi",
+    "average": "sedang",
+    "low": "rendah",
+    "muy alta": "sangat tinggi",
+    "alta": "tinggi",
+    "media": "sedang",
+    "baja": "rendah",
 }
 
+# 1. Scrape data koefisien & status langsung dari tabel web Tides4fishing
+live_coefficients = {}
+try:
+    url = "https://tides4fishing.com/id/yogyakarta/palihan"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept-Language": "id,en;q=0.9",
+    }
+    resp = requests.get(url, headers=headers, timeout=20)
+    if resp.status_code == 200:
+        soup = BeautifulSoup(resp.text, "html.parser")
+        
+        # Cari baris tabel pasang surut harian
+        rows = soup.find_all(lambda tag: tag.name == "tr" and tag.get("id", "").startswith("tabla_mareas_dia_"))
+        for row in rows:
+            row_id = row.get("id", "")
+            # Ambil nomor hari dari ID elemen (contoh: tabla_mareas_dia_6 -> 6)
+            match_day = re.search(r"tabla_mareas_dia_(\d+)", row_id)
+            if not match_day:
+                continue
+            day_num = int(match_day.group(1))
+
+            # Ekstrak angka koefisien dan status teks di kolom koefisien
+            coef_cell = row.find(class_=re.compile(r"coeficiente|col_coeficiente", re.I))
+            cell_text = coef_cell.get_text(" ", strip=True) if coef_cell else row.get_text(" ", strip=True)
+            
+            # Cari pola angka koefisien (misal 69, 81, 91) diikuti status
+            m_val = re.search(r"\b(\d{2,3})\b\s*(very high|high|average|low|muy alta|alta|media|baja)?", cell_text, re.I)
+            if m_val:
+                val = m_val.group(1)
+                raw_stat = (m_val.group(2) or "").lower()
+                status_indo = STATUS_MAP.get(raw_stat, "sedang")
+                live_coefficients[day_num] = f"{val} ({status_indo})"
+except Exception:
+    pass
+
+# 2. Generate entri feed untuk 14 hari ke depan
 JUMLAH_HARI = 14
 
 for i in range(JUMLAH_HARI):
@@ -55,23 +86,23 @@ for i in range(JUMLAH_HARI):
     m_set = ephem.localtime(observer.next_setting(moon)).astimezone(tz)
 
     day_num = target_date.day
-    if day_num in DATA_KOEFISIEN:
-        coef, status = DATA_KOEFISIEN[day_num]
+    # Gunakan hasil scrape langsung dari tabel web
+    if day_num in live_coefficients:
+        activity_text = live_coefficients[day_num]
     else:
-        coef, status = (50, "sedang")
-
-    activity_text = f"{coef} ({status})"
+        # Fallback cadangan jika koneksi web gagal
+        phase = moon.moon_phase
+        activity_text = "90 (sangat tinggi)" if (phase <= 0.15 or phase >= 0.85) else "55 (sedang)"
 
     nama_hari = HARI_INDO[target_date.weekday()]
     nama_bulan = BULAN_INDO[target_date.month]
     tanggal_str = f"{nama_hari}, {target_date.day:02d} {nama_bulan}"
     date_label = "Hari ini" if i == 0 else tanggal_str
 
-    # Format: Hari atau tanggal | Aktivitas Ikan: [angka] (status) | Major: jam
     title = f"{date_label} | Aktivitas Ikan: {activity_text} | Major: {m_transit.strftime('%H:%M')} & {m_antitransit.strftime('%H:%M')}"
 
     desc = (
-        f"<b>Koefisien Pasang Surut:</b> {coef} ({status})<br><br>"
+        f"<b>Koefisien Pasang Surut:</b> {activity_text}<br><br>"
         f"<b>Waktu Utama (Major):</b><br>"
         f"• { (m_transit - datetime.timedelta(hours=1)).strftime('%H:%M') } - { (m_transit + datetime.timedelta(hours=1)).strftime('%H:%M') }<br>"
         f"• { (m_antitransit - datetime.timedelta(hours=1)).strftime('%H:%M') } - { (m_antitransit + datetime.timedelta(hours=1)).strftime('%H:%M') }<br><br>"
@@ -86,7 +117,7 @@ for i in range(JUMLAH_HARI):
     fe.link(href="https://tides4fishing.com/id/yogyakarta/palihan")
     fe.description(desc)
     
-    # Inversi waktu pubDate agar urutan Hari ini selalu paling atas di widget
+    # Inversi waktu pubDate agar urutan "Hari ini" selalu paling atas
     fe.pubDate(now_time - datetime.timedelta(hours=i))
 
 fg.rss_file("palihan.xml", pretty=True)
