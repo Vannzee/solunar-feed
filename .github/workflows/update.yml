@@ -1,0 +1,24 @@
+name: Generate Solunar RSS
+
+on:
+  schedule:
+    - cron: '0 17 * * *' # Jalan tiap jam 00:00 WIB (17:00 UTC)
+  workflow_dispatch:      # Tombol manual trigger
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: pip install ephem feedgen
+      - run: python generate_feed.py
+      - name: Commit and push file XML
+        run: |
+          git config --global user.name 'github-actions'
+          git config --global user.email 'github-actions@github.com'
+          git add palihan.xml
+          git commit -m "Auto update solunar feed" || exit 0
+          git push
