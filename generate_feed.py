@@ -23,9 +23,26 @@ today = now_time.date()
 HARI_INDO = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
 BULAN_INDO = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"]
 
-# Penyesuaian rating ikan akurat sesuai tabel tides4fishing pekan ini
-# Rabu (i=1): 2 ikan | Kamis-Minggu (i>=2): 3 ikan (very high / pasang puncak)
-for i in range(14):
+JUMLAH_HARI = 10
+
+def get_fish_activity(target_date):
+    d = ephem.Date(target_date.strftime("%Y/%m/%d"))
+    prev_new = ephem.previous_new_moon(d)
+    next_new = ephem.next_new_moon(d)
+    cycle_pos = (d - prev_new) / (next_new - prev_new)
+    
+    dist_to_syzygy = min(abs(cycle_pos - 0.0), abs(cycle_pos - 0.5), abs(cycle_pos - 1.0))
+    
+    if dist_to_syzygy <= 0.08:
+        return "3 (sangat tinggi)"
+    elif dist_to_syzygy <= 0.16:
+        return "2 (tinggi)"
+    elif dist_to_syzygy <= 0.22:
+        return "2 (sedang)"
+    else:
+        return "1 (rendah)"
+
+for i in range(JUMLAH_HARI):
     target_date = today + datetime.timedelta(days=i)
     observer.date = target_date.strftime("%Y/%m/%d")
 
@@ -36,22 +53,18 @@ for i in range(14):
     m_rise = ephem.localtime(observer.next_rising(moon)).astimezone(tz)
     m_set = ephem.localtime(observer.next_setting(moon)).astimezone(tz)
 
-    # Logika rating: Hari ini 2 ikan, Rabu 2 ikan, Kamis ke atas 3 ikan
-    if i <= 1:
-        activity_icon = "🐟🐟"
-    else:
-        activity_icon = "🐟🐟🐟"
+    activity_text = get_fish_activity(target_date)
 
     nama_hari = HARI_INDO[target_date.weekday()]
     nama_bulan = BULAN_INDO[target_date.month]
     tanggal_str = f"{nama_hari}, {target_date.day:02d} {nama_bulan}"
     date_label = "Hari ini" if i == 0 else tanggal_str
 
-    # Judul: Hari/Tanggal | Jumlah Ikon | Major
-    title = f"{date_label} | {activity_icon} | Major: {m_transit.strftime('%H:%M')} & {m_antitransit.strftime('%H:%M')}"
+    # Format judul baru: Hari atau tanggal | Aktivitas Ikan: [angka] (status) | Major: jam
+    title = f"{date_label} | Aktivitas Ikan: {activity_text} | Major: {m_transit.strftime('%H:%M')} & {m_antitransit.strftime('%H:%M')}"
 
     desc = (
-        f"<b>Rating Aktivitas:</b> {activity_icon}<br><br>"
+        f"<b>Aktivitas Ikan:</b> {activity_text}<br><br>"
         f"<b>Waktu Utama (Major):</b><br>"
         f"• { (m_transit - datetime.timedelta(hours=1)).strftime('%H:%M') } - { (m_transit + datetime.timedelta(hours=1)).strftime('%H:%M') }<br>"
         f"• { (m_antitransit - datetime.timedelta(hours=1)).strftime('%H:%M') } - { (m_antitransit + datetime.timedelta(hours=1)).strftime('%H:%M') }<br><br>"
@@ -66,7 +79,6 @@ for i in range(14):
     fe.link(href="https://tides4fishing.com/id/yogyakarta/palihan")
     fe.description(desc)
     
-    # Inversi waktu pubDate agar urutan Hari ini berada paling atas
     fe.pubDate(now_time - datetime.timedelta(hours=i))
 
 fg.rss_file("palihan.xml", pretty=True)
