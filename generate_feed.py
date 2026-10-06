@@ -25,7 +25,7 @@ BULAN_INDO = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep",
 
 # Penyesuaian rating ikan akurat sesuai tabel tides4fishing pekan ini
 # Rabu (i=1): 2 ikan | Kamis-Minggu (i>=2): 3 ikan (very high / pasang puncak)
-for i in range(5):
+for i in range(14):
     target_date = today + datetime.timedelta(days=i)
     observer.date = target_date.strftime("%Y/%m/%d")
 
