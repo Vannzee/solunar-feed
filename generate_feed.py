@@ -517,13 +517,17 @@ def screenshot_tide_table(
 ):
     """
     Open the live Tides4Fishing page in Chromium and save the
-    rendered tide table as a PNG.
+    complete rendered monthly tide table as a PNG.
 
-    We locate the table through the real fish-activity cell:
-        td.tabla_mareas_actividad
+    The complete table is identified by:
 
-    This avoids depending on a fragile table index and preserves
-    the site's rendered fish icons, moon graphics and formatting.
+        #tabla_mareas
+
+    Browser viewport matches the portrait QHD monitor:
+
+        1440 x 2560
+
+    Browser zoom remains at 100%.
     """
 
     try:
@@ -548,8 +552,8 @@ def screenshot_tide_table(
 
             page = browser.new_page(
                 viewport={
-                    "width": 1600,
-                    "height": 1200,
+                    "width": 1440,
+                    "height": 2560,
                 },
                 device_scale_factor=1,
             )
@@ -564,29 +568,68 @@ def screenshot_tide_table(
                 timeout=60000,
             )
 
-            # Wait for the actual fish-activity cells.
-            activity = page.locator(
-                "td.tabla_mareas_actividad"
-            )
+            # ------------------------------------------------
+            # Wait for the complete monthly table.
+            # ------------------------------------------------
 
-            activity.first.wait_for(
-                state="visible",
-                timeout=60000,
-            )
-
-            # The activity cell belongs to the exact monthly
-            # tide table we want. Walk up to its containing table.
-            table = activity.first.locator(
-                "xpath=ancestor::table[1]"
+            table = page.locator(
+                "#tabla_mareas"
             )
 
             table.wait_for(
                 state="visible",
-                timeout=30000,
+                timeout=60000,
             )
 
-            # Give web fonts/images/icons a moment to finish.
+            print(
+                "[screenshot] Found #tabla_mareas"
+            )
+
+            # ------------------------------------------------
+            # Keep browser zoom at 100%.
+            # ------------------------------------------------
+
+            page.evaluate("""
+                document.body.style.zoom = "100%";
+            """)
+
+            # Allow fonts, icons and images to finish loading.
+            page.wait_for_timeout(3000)
+
+            # ------------------------------------------------
+            # Scroll the table into the viewport.
+            #
+            # The Tides4Fishing header is fixed/sticky and can
+            # cover the first days of the table. We position the
+            # table slightly below the top of the viewport.
+            # ------------------------------------------------
+
+            page.evaluate("""
+                const table =
+                    document.querySelector("#tabla_mareas");
+
+                if (table) {
+                    const rect =
+                        table.getBoundingClientRect();
+
+                    const absoluteTop =
+                        rect.top + window.scrollY;
+
+                    window.scrollTo({
+                        top: Math.max(
+                            0,
+                            absoluteTop - 100
+                        ),
+                        behavior: "instant"
+                    });
+                }
+            """)
+
             page.wait_for_timeout(2000)
+
+            # ------------------------------------------------
+            # Screenshot ONLY the complete table.
+            # ------------------------------------------------
 
             table.screenshot(
                 path=output_path,
@@ -605,7 +648,9 @@ def screenshot_tide_table(
         print(
             "[screenshot] ERROR:"
         )
+
         traceback.print_exc()
+
         return False
 
 
