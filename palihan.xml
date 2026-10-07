@@ -1,110 +1,93 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
-  <channel>
-    <title>🎣 Waktu Mancing Palihan</title>
-    <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-    <description>Informasi waktu terbaik untuk mancing di Palihan: aktivitas ikan, waktu solunar, matahari, bulan, dan koefisien pasang surut.</description>
-    <docs>http://www.rssboard.org/rss-specification</docs>
-    <generator>python-feedgen</generator>
-    <language>id</language>
-    <lastBuildDate>Wed, 07 Oct 2026 14:42:06 +0000</lastBuildDate>
-    <item>
-      <title>🔴 20 Okt | KURANG BAGUS | ⭐ 00:11–01:11, 05:41–07:41, 12:12–13:12, 18:04–20:04</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;RENDAH&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 00:11–01:11, 05:41–07:41, 12:12–13:12, 18:04–20:04&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;05:41–07:41 — RENDAH — Opposing lunar transit&lt;br&gt;18:04–20:04 — RENDAH — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;00:11–01:11 — RENDAH — Moonset&lt;br&gt;12:12–13:12 — RENDAH — Moonrise&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:15&lt;br&gt;Terbenam: 17:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 18:04–20:04&lt;br&gt;Major 2: 05:41–07:41&lt;br&gt;Moonrise: 12:12–13:12&lt;br&gt;Moonset: 00:11–01:11&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;43 (rendah)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-20</guid>
-      <pubDate>Wed, 07 Oct 2026 08:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 19 Okt | BAGUS | ⭐ 04:55–06:55, 11:23–12:23, 17:18–19:18</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 04:55–06:55, 11:23–12:23, 17:18–19:18&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;04:55–06:55 — TINGGI — Opposing lunar transit&lt;br&gt;17:18–19:18 — TINGGI — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;11:23–12:23 — TINGGI — Moonrise&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:15&lt;br&gt;Terbenam: 17:33&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 17:18–19:18&lt;br&gt;Major 2: 04:55–06:55&lt;br&gt;Moonrise: 11:23–12:23&lt;br&gt;Moonset: -&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;32 (rendah)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-19</guid>
-      <pubDate>Wed, 07 Oct 2026 09:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 18 Okt | BAGUS | ⭐ 04:06–06:06, 10:33–11:33, 16:31–18:31, 23:27–00:27</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 04:06–06:06, 10:33–11:33, 16:31–18:31, 23:27–00:27&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;04:06–06:06 — TINGGI — Opposing lunar transit&lt;br&gt;16:31–18:31 — TINGGI — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;10:33–11:33 — TINGGI — Moonrise&lt;br&gt;23:27–00:27 — TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:16&lt;br&gt;Terbenam: 17:33&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 16:31–18:31&lt;br&gt;Major 2: 04:06–06:06&lt;br&gt;Moonrise: 10:33–11:33&lt;br&gt;Moonset: 23:27–00:27&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;28 (rendah)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-18</guid>
-      <pubDate>Wed, 07 Oct 2026 10:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 17 Okt | BAGUS | ⭐ 03:16–05:16, 09:42–10:42, 15:41–17:41, 22:40–23:40</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 03:16–05:16, 09:42–10:42, 15:41–17:41, 22:40–23:40&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;03:16–05:16 — TINGGI — Opposing lunar transit&lt;br&gt;15:41–17:41 — TINGGI — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;09:42–10:42 — TINGGI — Moonrise&lt;br&gt;22:40–23:40 — TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:16&lt;br&gt;Terbenam: 17:33&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 15:41–17:41&lt;br&gt;Major 2: 03:16–05:16&lt;br&gt;Moonrise: 09:42–10:42&lt;br&gt;Moonset: 22:40–23:40&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;32 (rendah)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-17</guid>
-      <pubDate>Wed, 07 Oct 2026 11:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟡 16 Okt | SEDANG | ⭐ 02:25–04:25, 08:50–09:50, 14:51–16:51, 21:50–22:50</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;SEDANG&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 02:25–04:25, 08:50–09:50, 14:51–16:51, 21:50–22:50&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;02:25–04:25 — SEDANG — Opposing lunar transit&lt;br&gt;14:51–16:51 — SEDANG — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;08:50–09:50 — SEDANG — Moonrise&lt;br&gt;21:50–22:50 — SEDANG — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:16&lt;br&gt;Terbenam: 17:33&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 14:51–16:51&lt;br&gt;Major 2: 02:25–04:25&lt;br&gt;Moonrise: 08:50–09:50&lt;br&gt;Moonset: 21:50–22:50&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;41 (rendah)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-16</guid>
-      <pubDate>Wed, 07 Oct 2026 12:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🔴 15 Okt | KURANG BAGUS | ⭐ 01:33–03:33, 07:59–08:59, 13:59–15:59, 20:59–21:59</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;RENDAH&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 01:33–03:33, 07:59–08:59, 13:59–15:59, 20:59–21:59&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;01:33–03:33 — RENDAH — Opposing lunar transit&lt;br&gt;13:59–15:59 — RENDAH — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;07:59–08:59 — RENDAH — Moonrise&lt;br&gt;20:59–21:59 — RENDAH — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:17&lt;br&gt;Terbenam: 17:33&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 13:59–15:59&lt;br&gt;Major 2: 01:33–03:33&lt;br&gt;Moonrise: 07:59–08:59&lt;br&gt;Moonset: 20:59–21:59&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;53 (sedang)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-15</guid>
-      <pubDate>Wed, 07 Oct 2026 13:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟡 14 Okt | SEDANG | ⭐ 00:43–02:43, 07:10–08:10, 13:08–15:08, 20:07–21:07</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;SEDANG&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 00:43–02:43, 07:10–08:10, 13:08–15:08, 20:07–21:07&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;00:43–02:43 — SEDANG — Opposing lunar transit&lt;br&gt;13:08–15:08 — SEDANG — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;07:10–08:10 — SEDANG — Moonrise&lt;br&gt;20:07–21:07 — SEDANG — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:17&lt;br&gt;Terbenam: 17:33&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 13:08–15:08&lt;br&gt;Major 2: 00:43–02:43&lt;br&gt;Moonrise: 07:10–08:10&lt;br&gt;Moonset: 20:07–21:07&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;65 (sedang)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-14</guid>
-      <pubDate>Wed, 07 Oct 2026 14:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 13 Okt | BAGUS | ⭐ 06:23–07:23, 12:18–14:18, 19:14–20:14, 23:54–01:54</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 06:23–07:23, 12:18–14:18, 19:14–20:14, 23:54–01:54&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;12:18–14:18 — TINGGI — Lunar transit&lt;br&gt;23:54–01:54 — TINGGI — Opposing lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;06:23–07:23 — TINGGI — Moonrise&lt;br&gt;19:14–20:14 — TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:18&lt;br&gt;Terbenam: 17:33&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 12:18–14:18&lt;br&gt;Major 2: 23:54–01:54&lt;br&gt;Moonrise: 06:23–07:23&lt;br&gt;Moonset: 19:14–20:14&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;76 (tinggi)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-13</guid>
-      <pubDate>Wed, 07 Oct 2026 15:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 12 Okt | SANGAT BAGUS | ⭐ 05:38–06:38, 11:30–13:30, 18:23–19:23, 23:07–01:07</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;SANGAT TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 05:38–06:38, 11:30–13:30, 18:23–19:23, 23:07–01:07&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;11:30–13:30 — SANGAT TINGGI — Lunar transit&lt;br&gt;23:07–01:07 — SANGAT TINGGI — Opposing lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;05:38–06:38 — SANGAT TINGGI — Moonrise&lt;br&gt;18:23–19:23 — SANGAT TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:18&lt;br&gt;Terbenam: 17:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 11:30–13:30&lt;br&gt;Major 2: 23:07–01:07&lt;br&gt;Moonrise: 05:38–06:38&lt;br&gt;Moonset: 18:23–19:23&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;85 (tinggi)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-12</guid>
-      <pubDate>Wed, 07 Oct 2026 16:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 11 Okt | SANGAT BAGUS | ⭐ 04:56–05:56, 10:44–12:44, 17:34–18:34</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;SANGAT TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 04:56–05:56, 10:44–12:44, 17:34–18:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;10:44–12:44 — SANGAT TINGGI — Lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;04:56–05:56 — SANGAT TINGGI — Moonrise&lt;br&gt;17:34–18:34 — SANGAT TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:19&lt;br&gt;Terbenam: 17:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 10:44–12:44&lt;br&gt;Major 2: -&lt;br&gt;Moonrise: 04:56–05:56&lt;br&gt;Moonset: 17:34–18:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;92 (sangat tinggi)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-11</guid>
-      <pubDate>Wed, 07 Oct 2026 17:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 10 Okt | SANGAT BAGUS | ⭐ 04:15–05:15, 09:59–11:59, 16:45–17:45, 22:21–00:21</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;SANGAT TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 04:15–05:15, 09:59–11:59, 16:45–17:45, 22:21–00:21&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;09:59–11:59 — SANGAT TINGGI — Lunar transit&lt;br&gt;22:21–00:21 — SANGAT TINGGI — Opposing lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;04:15–05:15 — SANGAT TINGGI — Moonrise&lt;br&gt;16:45–17:45 — SANGAT TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:19&lt;br&gt;Terbenam: 17:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 09:59–11:59&lt;br&gt;Major 2: 22:21–00:21&lt;br&gt;Moonrise: 04:15–05:15&lt;br&gt;Moonset: 16:45–17:45&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;96 (sangat tinggi)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-10</guid>
-      <pubDate>Wed, 07 Oct 2026 18:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 09 Okt | SANGAT BAGUS | ⭐ 03:34–04:34, 09:14–11:14, 15:57–16:57, 21:37–23:37</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;SANGAT TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 03:34–04:34, 09:14–11:14, 15:57–16:57, 21:37–23:37&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;09:14–11:14 — SANGAT TINGGI — Lunar transit&lt;br&gt;21:37–23:37 — SANGAT TINGGI — Opposing lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;03:34–04:34 — SANGAT TINGGI — Moonrise&lt;br&gt;15:57–16:57 — SANGAT TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:20&lt;br&gt;Terbenam: 17:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 09:14–11:14&lt;br&gt;Major 2: 21:37–23:37&lt;br&gt;Moonrise: 03:34–04:34&lt;br&gt;Moonset: 15:57–16:57&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;95 (sangat tinggi)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-09</guid>
-      <pubDate>Wed, 07 Oct 2026 19:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 08 Okt | BAGUS | ⭐ 02:52–03:52, 08:29–10:29, 15:08–16:08, 20:52–22:52</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 02:52–03:52, 08:29–10:29, 15:08–16:08, 20:52–22:52&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;08:29–10:29 — TINGGI — Lunar transit&lt;br&gt;20:52–22:52 — TINGGI — Opposing lunar transit&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;02:52–03:52 — TINGGI — Moonrise&lt;br&gt;15:08–16:08 — TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:20&lt;br&gt;Terbenam: 17:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 08:29–10:29&lt;br&gt;Major 2: 20:52–22:52&lt;br&gt;Moonrise: 02:52–03:52&lt;br&gt;Moonset: 15:08–16:08&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;91 (sangat tinggi)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-08</guid>
-      <pubDate>Wed, 07 Oct 2026 20:42:05 +0700</pubDate>
-    </item>
-    <item>
-      <title>🟢 07 Okt | BAGUS | ⭐ 07:42–09:42, 20:04–22:04</title>
-      <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;h3&gt;🎣 Aktivitas Ikan&lt;/h3&gt;&lt;b&gt;TINGGI&lt;/b&gt;&lt;br&gt;&lt;i&gt;Data aktivitas ikan langsung dari Tides4Fishing.&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;h3&gt;⭐ Waktu Terbaik&lt;/h3&gt;⭐ 07:42–09:42, 20:04–22:04&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Major Periods&lt;/h3&gt;07:42–09:42 — SANGAT TINGGI — Lunar transit (moon up)&lt;br&gt;20:04–22:04 — SANGAT TINGGI — Opposing lunar transit (moon down)&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Minor Periods&lt;/h3&gt;02:08–03:08 — TINGGI — Moonrise&lt;br&gt;14:17–15:17 — TINGGI — Moonset&lt;br&gt;&lt;br&gt;&lt;h3&gt;☀️ Matahari&lt;/h3&gt;Terbit: 05:21&lt;br&gt;Terbenam: 17:34&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌙 Perhitungan Astronomi&lt;/h3&gt;Major 1: 07:42–09:42&lt;br&gt;Major 2: 20:06–22:06&lt;br&gt;Moonrise: 02:08–03:08&lt;br&gt;Moonset: 14:18–15:18&lt;br&gt;&lt;br&gt;&lt;h3&gt;🌊 Koefisien Pasang Surut&lt;/h3&gt;81 (tinggi)&lt;br&gt;&lt;br&gt;&lt;small&gt;Waktu solunar di atas bukan waktu pasang atau surut.&lt;/small&gt;</description>
-      <guid isPermaLink="false">palihan-2026-10-07</guid>
-      <pubDate>Wed, 07 Oct 2026 21:42:05 +0700</pubDate>
-    </item>
-  </channel>
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>Palihan Fishing Activity</title>
+<link>https://tides4fishing.com/id/yogyakarta/palihan</link>
+<description>Aktivitas ikan Palihan</description>
+<lastBuildDate>Wed, 07 Oct 2026 21:47:24 +0700</lastBuildDate>
+<item>
+<title>🟢 7 Okt | BAGUS | 07:42–09:42, 20:04–22:04</title>
+<description>Aktivitas ikan: BAGUS | Sunrise: 05:19 | Sunset: 17:33 | Moonrise: 03:21 | Moonset: 14:47</description>
+<pubDate>Wed, 07 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-07</guid>
+</item>
+<item>
+<title>🟢 8 Okt | BAGUS | 08:28–10:28, 20:51–22:51</title>
+<description>Aktivitas ikan: BAGUS | Sunrise: 05:18 | Sunset: 17:32 | Moonrise: 04:02 | Moonset: 15:37</description>
+<pubDate>Thu, 08 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-08</guid>
+</item>
+<item>
+<title>🟢 9 Okt | SANGAT BAGUS | 09:13–11:13, 21:35–23:35</title>
+<description>Aktivitas ikan: SANGAT BAGUS | Sunrise: 05:18 | Sunset: 17:32 | Moonrise: 04:43 | Moonset: 16:25</description>
+<pubDate>Fri, 09 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-09</guid>
+</item>
+<item>
+<title>🟢 10 Okt | SANGAT BAGUS | ⭐ 04:55–05:55, 09:58–11:58, 22:20–00:20</title>
+<description>Aktivitas ikan: SANGAT BAGUS | Sunrise: 05:18 | Sunset: 17:32 | Moonrise: 05:25 | Moonset: 17:14</description>
+<pubDate>Sat, 10 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-10</guid>
+</item>
+<item>
+<title>🟢 11 Okt | SANGAT BAGUS | 10:43–12:43, ⭐ 17:32–18:32, 23:05–01:05</title>
+<description>Aktivitas ikan: SANGAT BAGUS | Sunrise: 05:17 | Sunset: 17:32 | Moonrise: 06:07 | Moonset: 18:02</description>
+<pubDate>Sun, 11 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-11</guid>
+</item>
+<item>
+<title>🟢 12 Okt | SANGAT BAGUS | 11:29–13:29, 23:53–01:53</title>
+<description>Aktivitas ikan: SANGAT BAGUS | Sunrise: 05:17 | Sunset: 17:32 | Moonrise: 06:52 | Moonset: 18:52</description>
+<pubDate>Mon, 12 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-12</guid>
+</item>
+<item>
+<title>🟢 13 Okt | BAGUS | 00:42–02:42, 12:17–14:17</title>
+<description>Aktivitas ikan: BAGUS | Sunrise: 05:16 | Sunset: 17:32 | Moonrise: 07:39 | Moonset: 19:43</description>
+<pubDate>Tue, 13 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-13</guid>
+</item>
+<item>
+<title>🟡 14 Okt | SEDANG | 01:32–03:32, 13:07–15:07</title>
+<description>Aktivitas ikan: SEDANG | Sunrise: 05:16 | Sunset: 17:32 | Moonrise: 07:39 | Moonset: 20:35</description>
+<pubDate>Wed, 14 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-14</guid>
+</item>
+<item>
+<title>🔴 15 Okt | BURUK | 02:24–04:24, 13:58–15:58</title>
+<description>Aktivitas ikan: BURUK | Sunrise: 05:15 | Sunset: 17:32 | Moonrise: 08:28 | Moonset: 21:28</description>
+<pubDate>Thu, 15 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-15</guid>
+</item>
+<item>
+<title>🟡 16 Okt | SEDANG | ⭐ 03:15–05:15, 14:49–16:49</title>
+<description>Aktivitas ikan: SEDANG | Sunrise: 05:15 | Sunset: 17:32 | Moonrise: 09:19 | Moonset: 22:19</description>
+<pubDate>Fri, 16 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-16</guid>
+</item>
+<item>
+<title>🟢 17 Okt | BAGUS | ⭐ 04:05–06:05, 15:40–17:40</title>
+<description>Aktivitas ikan: BAGUS | Sunrise: 05:14 | Sunset: 17:32 | Moonrise: 10:11 | Moonset: 23:09</description>
+<pubDate>Sat, 17 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-17</guid>
+</item>
+<item>
+<title>🟢 18 Okt | BAGUS | ⭐ 04:54–06:54, 16:30–18:30</title>
+<description>Aktivitas ikan: BAGUS | Sunrise: 05:14 | Sunset: 17:32 | Moonrise: 11:02 | Moonset: 23:56</description>
+<pubDate>Sun, 18 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-18</guid>
+</item>
+<item>
+<title>🟢 19 Okt | BAGUS | 05:40–07:40, ⭐ 17:17–19:17</title>
+<description>Aktivitas ikan: BAGUS | Sunrise: 05:14 | Sunset: 17:32 | Moonrise: 11:52 | Moonset: 00:40</description>
+<pubDate>Mon, 19 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-19</guid>
+</item>
+<item>
+<title>🔴 20 Okt | BURUK | 06:25–08:25, 18:02–20:02</title>
+<description>Aktivitas ikan: BURUK | Sunrise: 05:13 | Sunset: 17:32 | Moonrise: 12:41 | Moonset: 01:22</description>
+<pubDate>Tue, 20 Oct 2026 06:00:00 +0700</pubDate>
+<guid>2026-10-20</guid>
+</item>
+</channel>
 </rss>
