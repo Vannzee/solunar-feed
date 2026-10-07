@@ -1,49 +1,64 @@
+"""
+generate_feed.py
+RSS Solunar Palihan - data MAJOR/MINOR dibaca langsung
+dari halaman tanggal Tides4Fishing.
+
+Install:
+    pip install selenium beautifulsoup4 feedgen
+
+Chrome yang terpasang akan dipakai oleh Selenium Manager.
+"""
+
 import argparse
 import datetime as dt
+import html
 import re
-import traceback
-from collections import Counter
+import time
 from zoneinfo import ZoneInfo
 
-import requests
 from bs4 import BeautifulSoup
-
-try:
-    import ephem
-except ImportError:
-    ephem = None
+from feedgen.feed import FeedGenerator
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
 
 
 URL = "https://tides4fishing.com/id/yogyakarta/palihan"
 TZ = ZoneInfo("Asia/Jakarta")
 
-H1 = dt.timedelta(hours=1)
-M30 = dt.timedelta(minutes=30)
+DEFAULT_DAYS = 14
 
-ID_WEEKDAYS = [
-    "Senin", "Selasa", "Rabu", "Kamis",
-    "Jumat", "Sabtu", "Minggu"
+HARI = [
+    "Sen", "Sel", "Rab", "Kam",
+    "Jum", "Sab", "Min"
 ]
 
-ID_MONTHS = [
-    "Januari", "Februari", "Maret", "April",
-    "Mei", "Juni", "Juli", "Agustus",
-    "September", "Oktober", "November", "Desember"
+BULAN = [
+    "",
+    "Jan", "Feb", "Mar", "Apr",
+    "Mei", "Jun", "Jul", "Agt",
+    "Sep", "Okt", "Nov", "Des"
 ]
 
-LEVELS_ID = [
-    "rendah",
-    "sedang",
-    "tinggi",
-    "sangat tinggi"
-]
+LEVEL = {
+    "low": 1,
+    "average": 2,
+    "high": 3,
+    "very high": 4,
+}
 
-STATUS_MAP = {
-    "LOW": "rendah",
-    "AVERAGE": "sedang",
-    "MEDIUM": "sedang",
-    "HIGH": "tinggi",
-    "VERY HIGH": "sangat tinggi",
+STATUS = {
+    1: "🔴 BURUK",
+    2: "🟡 SEDANG",
+    3: "🟢 BAGUS",
+    4: "🟢 SANGAT BAGUS",
+}
+
+ACTIVITY_TEXT = {
+    1: "LOW ACTIVITY",
+    2: "AVERAGE ACTIVITY",
+    3: "HIGH ACTIVITY",
+    4: "VERY HIGH ACTIVITY",
 }
 
 
@@ -51,1062 +66,1279 @@ STATUS_MAP = {
 # BASIC HELPERS
 # ============================================================
 
-def flatten(text):
-    if not text:
-        return ""
-
-    soup = BeautifulSoup(str(text), "html.parser")
-    return " ".join(soup.stripped_strings)
+def clean(text):
+    return re.sub(r"\s+", " ", text or "").strip()
 
 
-def month_year_of_table(soup):
-    text = soup.get_text(" ", strip=True)
+def minutes(hm):
+    h, m = map(int, hm.split(":"))
+    return h * 60 + m
 
-    month_map = {
-        "JANUARY": 1,
-        "FEBRUARY": 2,
-        "MARCH": 3,
-        "APRIL": 4,
-        "MAY": 5,
-        "JUNE": 6,
-        "JULY": 7,
-        "AUGUST": 8,
-        "SEPTEMBER": 9,
-        "OCTOBER": 10,
-        "NOVEMBER": 11,
-        "DECEMBER": 12,
-    }
 
-    for name, number in month_map.items():
-        m = re.search(
-            rf"\b{name}\s*,?\s*(20\d{{2}})\b",
-            text,
-            re.I
-        )
-        if m:
-            return number, int(m.group(1))
+def normalize_time(h, m):
+    return f"{int(h):02d}:{int(m):02d}"
 
-        m = re.search(
-            rf"\b{name}\s+(20\d{{2}})\b",
-            text,
-            re.I
-        )
-        if m:
-            return number, int(m.group(1))
 
-    return None, None
+def in_period(event_hm, start_hm, end_hm):
+    """
+    Mendukung periode yang melewati tengah malam.
+
+    Contoh:
+        22:20 -> 00:20
+
+    Maka 23:30 dan 00:10 dianggap berada di dalam periode.
+    """
+
+    event = minutes(event_hm)
+    start = minutes(start_hm)
+    end = minutes(end_hm)
+
+    if start <= end:
+        return start <= event <= end
+
+    return event >= start or event <= end
 
 
 # ============================================================
-# TIDE / FISH ACTIVITY
+# ACTIVITY
 # ============================================================
 
-def parse_coefficients(soup):
-    result = {}
-
-    month, year = month_year_of_table(soup)
-
-    if not month or not year:
-        return result
-
-    rows = soup.find_all("tr")
-
-    for row in rows:
-        cells = row.find_all(["td", "th"])
-
-        if not cells:
-            continue
-
-        text = flatten(row)
-
-        m = re.search(
-            r"\b([1-9]|[12]\d|3[01])\b.*?"
-            r"\b(\d{1,3})\b\s*"
-            r"(very high|high|average|medium|low)",
-            text,
-            re.I
-        )
-
-        if not m:
-            continue
-
-        day = int(m.group(1))
-        coefficient = int(m.group(2))
-        status = m.group(3).lower()
-
-        result[day] = {
-            "date": dt.date(year, month, day),
-            "coefficient": coefficient,
-            "status": status,
-        }
-
-    return result
-
-
-def parse_fish_activity(row):
+def activity_level(text):
     """
-    Tides4Fishing menggunakan ikon ikan:
-
-      icon-ic_pez_leyenda   = aktif
-      icon-ic_pez_leyenda2  = tidak aktif
-
-    Jumlah ikan aktif:
-      0 = rendah
-      1 = sedang
-      2 = tinggi
-      3+ = sangat tinggi
+    Membaca:
+        VERY HIGH ACTIVITY
+        HIGH ACTIVITY
+        AVERAGE ACTIVITY
+        LOW ACTIVITY
     """
 
-    classes = []
+    t = clean(text).lower()
 
-    for tag in row.find_all(True):
-        cls = tag.get("class", [])
+    if "very high activity" in t:
+        return 4
 
-        if isinstance(cls, str):
-            cls = [cls]
+    if "high activity" in t:
+        return 3
 
-        classes.extend(cls)
+    if "average activity" in t:
+        return 2
 
-    active = sum(
-        1
-        for c in classes
-        if c == "icon-ic_pez_leyenda"
-    )
+    if "low activity" in t:
+        return 1
 
-    inactive = sum(
-        1
-        for c in classes
-        if c == "icon-ic_pez_leyenda2"
-    )
+    # Fallback jika HTML memisahkan kata activity.
+    if "very high" in t:
+        return 4
 
-    total = active + inactive
+    if "high" in t:
+        return 3
 
-    if total == 0:
-        return None
+    if "average" in t:
+        return 2
 
-    if active <= 0:
-        level = "rendah"
-    elif active == 1:
-        level = "sedang"
-    elif active == 2:
-        level = "tinggi"
-    else:
-        level = "sangat tinggi"
-
-    return {
-        "active": active,
-        "inactive": inactive,
-        "total": total,
-        "level": level,
-    }
-
-
-def parse_solunar(soup):
-    """
-    Ambil aktivitas ikan harian dari tabel Tides4Fishing.
-    """
-
-    result = {}
-
-    for row in soup.find_all("tr"):
-        text = flatten(row)
-
-        if not re.search(
-            r"\b(LOW|AVERAGE|MEDIUM|HIGH|VERY HIGH)\b",
-            text,
-            re.I
-        ):
-            continue
-
-        m = re.search(
-            r"^\s*(\d{1,2})\b",
-            text
-        )
-
-        if not m:
-            continue
-
-        day = int(m.group(1))
-
-        fish = parse_fish_activity(row)
-
-        if fish:
-            result[day] = fish
-
-    return result
-
-
-# ============================================================
-# DETAILED SOLUNAR PERIODS
-# ============================================================
-
-def activity_level_from_text(text):
-    text = text.upper()
-
-    if "VERY HIGH" in text:
-        return "sangat tinggi"
-
-    if "HIGH" in text:
-        return "tinggi"
-
-    if "AVERAGE" in text or "MEDIUM" in text:
-        return "sedang"
-
-    if "LOW" in text:
-        return "rendah"
+    if "low" in t:
+        return 1
 
     return None
 
 
-def level_number(level):
-    return {
-        "rendah": 0,
-        "sedang": 1,
-        "tinggi": 2,
-        "sangat tinggi": 3,
-    }.get(level, 0)
+def activity_text(level):
+    return ACTIVITY_TEXT.get(level, "UNKNOWN")
 
 
-def parse_clock(value):
-    """
-    7:42
-    07:42
-    7.42
-    """
+# ============================================================
+# TIME RANGE
+# ============================================================
 
-    if not value:
-        return None
-
-    value = value.strip().replace(".", ":")
-
-    m = re.match(
-        r"^(\d{1,2}):(\d{2})$",
-        value
-    )
-
-    if not m:
-        return None
-
-    hour = int(m.group(1))
-    minute = int(m.group(2))
-
-    if hour > 23 or minute > 59:
-        return None
-
-    return hour * 60 + minute
-
-
-def format_minutes(minutes):
-    minutes = minutes % (24 * 60)
-
-    hour = minutes // 60
-    minute = minutes % 60
-
-    return f"{hour:02d}:{minute:02d}"
-
-
-def parse_period_time_range(text):
+def parse_time_range(text):
     """
     Contoh:
-        from 7:42 h to 9:42 h
-
-    Menghasilkan:
-        (462, 582)
+        from 16:45 h to 17:45 h
     """
 
     m = re.search(
-        r"from\s+(\d{1,2}:\d{2})\s*h?\s+"
-        r"to\s+(\d{1,2}:\d{2})\s*h?",
+        r"from\s+"
+        r"(\d{1,2}):(\d{2})\s*h?"
+        r"\s+to\s+"
+        r"(\d{1,2}):(\d{2})\s*h?",
         text,
-        re.I
+        re.I,
     )
 
     if not m:
         return None
 
-    start = parse_clock(m.group(1))
-    end = parse_clock(m.group(2))
+    return (
+        normalize_time(m.group(1), m.group(2)),
+        normalize_time(m.group(3), m.group(4)),
+    )
 
-    if start is None or end is None:
-        return None
 
-    return start, end
+# ============================================================
+# SUNRISE / SUNSET
+# ============================================================
 
+def parse_sun_times(soup):
+    """
+    Membaca sunrise/sunset dari halaman Tides4Fishing.
+
+    Tidak dihitung dengan ephem.
+    """
+
+    text = clean(soup.get_text(" ", strip=True))
+
+    sunrise = None
+    sunset = None
+
+    # Beberapa pola yang mungkin muncul pada halaman.
+    patterns = [
+        (
+            r"sunrise\s+"
+            r"(\d{1,2}:\d{2})(?::\d{2})?"
+            r".{0,250}?"
+            r"sunset\s+"
+            r"(\d{1,2}:\d{2})(?::\d{2})?"
+        ),
+        (
+            r"sun\s+(?:rise|rising|rose)"
+            r".{0,150}?"
+            r"(\d{1,2}:\d{2})(?::\d{2})?"
+            r".{0,300}?"
+            r"sunset"
+            r".{0,150}?"
+            r"(\d{1,2}:\d{2})(?::\d{2})?"
+        ),
+    ]
+
+    for pattern in patterns:
+        m = re.search(
+            pattern,
+            text,
+            re.I | re.S,
+        )
+
+        if m:
+            sunrise = normalize_time(
+                *m.group(1).split(":")
+            )
+
+            sunset = normalize_time(
+                *m.group(2).split(":")
+            )
+
+            break
+
+    return sunrise, sunset
+
+
+# ============================================================
+# PERIOD NAME
+# ============================================================
+
+def get_period_name(text):
+    """
+    Mengambil nama astronomical event.
+
+    Contoh:
+        Lunar transit
+        Opposing lunar transit
+        Moonrise
+        Moonset
+    """
+
+    patterns = [
+        "Opposing lunar transit",
+        "Lunar transit",
+        "Moonrise",
+        "Moonset",
+    ]
+
+    for name in patterns:
+        if re.search(
+            re.escape(name),
+            text,
+            re.I,
+        ):
+            return name
+
+    return "Solunar"
+
+
+# ============================================================
+# MAJOR / MINOR
+# ============================================================
+
+def get_period_kind(node, name):
+    """
+    Menentukan MAJOR atau MINOR berdasarkan nama event
+    atau class HTML parent.
+    """
+
+    name_lower = name.lower()
+
+    if "lunar transit" in name_lower:
+        return "major"
+
+    if "moonrise" in name_lower:
+        return "minor"
+
+    if "moonset" in name_lower:
+        return "minor"
+
+    current = node
+
+    for _ in range(8):
+
+        if current is None:
+            break
+
+        classes = " ".join(
+            current.get("class", [])
+        ).lower()
+
+        if (
+            "mayor" in classes
+            or "major" in classes
+        ):
+            return "major"
+
+        if (
+            "menor" in classes
+            or "minor" in classes
+        ):
+            return "minor"
+
+        current = current.parent
+
+    return "minor"
+
+
+# ============================================================
+# EXPLICIT PEAK
+# ============================================================
+
+def is_explicit_peak(node):
+    """
+    Tides4Fishing memiliki penanda khusus untuk peak/green
+    pada periode tertentu.
+
+    Kita cek node dan beberapa parent-nya.
+    """
+
+    current = node
+
+    for _ in range(8):
+
+        if current is None:
+            break
+
+        classes = " ".join(
+            current.get("class", [])
+        ).lower()
+
+        if any(
+            marker in classes
+            for marker in (
+                "green",
+                "verde",
+                "peak",
+            )
+        ):
+            return True
+
+        current = current.parent
+
+    return False
+
+
+# ============================================================
+# PARSE DETAILED PERIODS
+# ============================================================
 
 def parse_detailed_periods(soup):
     """
-    Membaca:
+    Membaca MAJOR/MINOR langsung dari HTML halaman tanggal aktif.
 
-        MAJOR PERIODS
-        MINOR PERIODS
-
-    dari halaman Tides4Fishing.
-
-    Menghasilkan list seperti:
-
-        {
-            "type": "major",
-            "level": "sangat tinggi",
-            "level_num": 3,
-            "start": 462,
-            "end": 582,
-            "name": "Lunar transit",
-            "peak": False
-        }
+    Tidak membuat periode sendiri menggunakan ephem.
     """
 
     periods = []
+    seen = set()
 
-    # --------------------------------------------------------
-    # Cari blok periode secara langsung.
-    # Ini sengaja tidak bergantung pada struktur parent tertentu
-    # karena HTML Tides4Fishing mempunyai wrapper bertingkat.
-    # --------------------------------------------------------
-
-    blocks = soup.find_all(
-        "div",
-        class_=lambda c: (
-            c
-            and "salida_puesta_luna_periodo" in c
-            and (
-                "salida_puesta_luna_periodo_mayor" in c
-                or "salida_puesta_luna_periodo_menor" in c
-            )
+    nodes = soup.find_all(
+        class_=re.compile(
+            r"salida_puesta_luna_periodo_datos"
         )
     )
 
-    for block in blocks:
+    for node in nodes:
 
-        classes = block.get("class", [])
-
-        if "salida_puesta_luna_periodo_mayor" in classes:
-            period_type = "major"
-        elif "salida_puesta_luna_periodo_menor" in classes:
-            period_type = "minor"
-        else:
-            continue
-
-        # ----------------------------------------------------
-        # Setiap blok biasanya memiliki div:
-        #
-        # salida_puesta_luna_periodo_datos
-        # ----------------------------------------------------
-
-        data_blocks = block.find_all(
-            "div",
-            class_=lambda c: (
-                c and
-                "salida_puesta_luna_periodo_datos" in c
+        text = clean(
+            node.get_text(
+                " ",
+                strip=True
             )
         )
 
-        for data in data_blocks:
+        time_range = parse_time_range(text)
 
-            text = flatten(data)
+        if not time_range:
+            continue
 
-            time_range = parse_period_time_range(text)
+        start, end = time_range
 
-            if not time_range:
-                continue
+        level = activity_level(text)
 
-            start, end = time_range
+        if level is None:
+            continue
 
-            level = activity_level_from_text(text)
+        name = get_period_name(text)
 
-            if not level:
-                continue
+        kind = get_period_kind(
+            node,
+            name
+        )
 
-            # ------------------------------------------------
-            # Nama periode
-            # ------------------------------------------------
+        explicit_peak = is_explicit_peak(
+            node
+        )
 
-            name = ""
-
-            for candidate in [
-                "Lunar transit",
-                "Opposing lunar transit",
-                "Moonrise",
-                "Moonset",
-            ]:
-                if candidate.lower() in text.lower():
-                    name = candidate
-                    break
-
-            if not name:
-                # fallback: ambil teks setelah range
-                clean = re.sub(
-                    r"from\s+\d{1,2}:\d{2}\s*h?\s+"
-                    r"to\s+\d{1,2}:\d{2}\s*h?",
-                    "",
-                    text,
-                    flags=re.I
-                )
-
-                name = clean.strip()
-
-            # ------------------------------------------------
-            # Deteksi explicit green / peak jika ada di HTML.
-            # ------------------------------------------------
-
-            data_classes = data.get("class", [])
-
-            if isinstance(data_classes, str):
-                data_classes = [data_classes]
-
-            full_class_text = " ".join(data_classes).lower()
-
-            peak = (
-                "green" in full_class_text
-                or "verde" in full_class_text
-                or "peak" in full_class_text
-            )
-
-            periods.append({
-                "type": period_type,
-                "level": level,
-                "level_num": level_number(level),
-                "start": start,
-                "end": end,
-                "name": name,
-                "peak": peak,
-            })
-
-    # Hilangkan duplikat
-    unique = []
-
-    seen = set()
-
-    for p in periods:
         key = (
-            p["type"],
-            p["start"],
-            p["end"],
-            p["name"],
-            p["level"],
+            start,
+            end,
+            name.lower(),
+            kind,
+            level,
         )
 
         if key in seen:
             continue
 
         seen.add(key)
-        unique.append(p)
 
-    unique.sort(
-        key=lambda p: (
-            p["start"],
-            p["end"]
+        periods.append({
+            "start": start,
+            "end": end,
+            "level": level,
+            "name": name,
+            "kind": kind,
+            "explicit_peak": explicit_peak,
+            "solar_peak": False,
+        })
+
+    return periods
+
+
+# ============================================================
+# OVERALL DAILY ACTIVITY
+# ============================================================
+
+def parse_overall_activity(soup):
+    """
+    Mengambil aktivitas harian jika tersedia.
+
+    Kalau tidak ditemukan, level tertinggi dari MAJOR/MINOR
+    dipakai sebagai fallback.
+    """
+
+    text = clean(
+        soup.get_text(
+            " ",
+            strip=True
         )
-    )
+    ).lower()
 
-    return unique
+    patterns = [
+        r"solunar activity\s*[:\-]?\s*"
+        r"(very high|high|average|low)",
 
+        r"fish activity forecast\s+is\s+"
+        r"(very high|high|average|low)",
+    ]
 
-# ============================================================
-# PEAK DETECTION
-# ============================================================
+    for pattern in patterns:
 
-def datetime_to_minutes(value):
-    if value is None:
-        return None
+        m = re.search(
+            pattern,
+            text,
+            re.I
+        )
 
-    if isinstance(value, dt.datetime):
-        return value.hour * 60 + value.minute
-
-    if isinstance(value, dt.time):
-        return value.hour * 60 + value.minute
+        if m:
+            return LEVEL[
+                m.group(1).lower()
+            ]
 
     return None
 
 
-def time_inside_period(event_minute, start, end):
+# ============================================================
+# STAR SELECTION
+# ============================================================
+
+def mark_solar_peaks(
+    periods,
+    sunrise,
+    sunset
+):
     """
-    Cek apakah sunrise/sunset jatuh di dalam periode.
+    Sebuah periode dianggap peak apabila sunrise/sunset
+    jatuh di dalam periode tersebut.
 
-    Mendukung periode melewati tengah malam.
-
-    Contoh:
-        22:20 -> 00:20
-
-    sunset 23:00 => True
-    """
-
-    if event_minute is None:
-        return False
-
-    if start <= end:
-        return start <= event_minute <= end
-
-    # Cross midnight
-    return (
-        event_minute >= start
-        or event_minute <= end
-    )
-
-
-def period_is_solar_peak(period, day):
-    """
-    ⭐ ditentukan berdasarkan:
-
-    1. Explicit green/peak class dari HTML
-    ATAU
-    2. Sunrise jatuh dalam periode
-    ATAU
-    3. Sunset jatuh dalam periode
-
-    Tides4Fishing menjelaskan bahwa periode yang
-    bertepatan dengan sunrise/sunset adalah peak period.
+    Ini mengikuti penjelasan Tides4Fishing:
+    ketika solunar period bertepatan dengan sunrise/sunset,
+    aktivitas diperkirakan lebih tinggi.
     """
 
-    if period.get("peak"):
-        return True
+    for period in periods:
 
-    sunrise = datetime_to_minutes(
-        day.get("sunrise")
-    )
+        peak = False
 
-    sunset = datetime_to_minutes(
-        day.get("sunset")
-    )
+        if sunrise:
 
-    if time_inside_period(
-        sunrise,
-        period["start"],
-        period["end"]
-    ):
-        return True
+            if in_period(
+                sunrise,
+                period["start"],
+                period["end"]
+            ):
+                peak = True
 
-    if time_inside_period(
-        sunset,
-        period["start"],
-        period["end"]
-    ):
-        return True
+        if sunset:
 
-    return False
+            if in_period(
+                sunset,
+                period["start"],
+                period["end"]
+            ):
+                peak = True
+
+        period["solar_peak"] = peak
 
 
-def select_best_periods(periods, day):
+def choose_best_periods(
+    periods,
+    sunrise,
+    sunset
+):
     """
-    Mengembalikan:
+    Aturan:
 
-        displayed_periods
-        starred_period
-
-    ATURAN:
-
-    - Tampilkan semua periode dengan aktivitas tertinggi.
-    - ⭐ hanya berdasarkan peak/sunrise/sunset.
-    - JANGAN pernah otomatis memilih periode pertama.
+    1. Ambil semua periode dengan level tertinggi.
+    2. Jangan otomatis mengutamakan MAJOR.
+    3. ⭐ hanya jika ada explicit peak atau solar coincidence.
+    4. Jika ada explicit peak, explicit peak menang.
+    5. Jika tidak ada explicit peak, pilih periode yang
+       benar-benar bertepatan dengan sunrise/sunset.
     """
 
     if not periods:
-        return [], None
+        return [], []
 
-    # --------------------------------------------------------
-    # Level tertinggi
-    # --------------------------------------------------------
+    # Tandai coincidence sunrise/sunset.
+    mark_solar_peaks(
+        periods,
+        sunrise,
+        sunset
+    )
 
     highest_level = max(
-        p["level_num"]
+        p["level"]
         for p in periods
     )
 
-    highest_periods = [
-        p for p in periods
-        if p["level_num"] == highest_level
+    highest = [
+        p
+        for p in periods
+        if p["level"] == highest_level
     ]
 
+    highest.sort(
+        key=lambda p: minutes(
+            p["start"]
+        )
+    )
+
     # --------------------------------------------------------
-    # Cari peak.
-    #
-    # Penting:
-    # kita cari dari SEMUA periode, bukan hanya VERY HIGH.
-    #
-    # Jadi apabila Moonset adalah peak karena sunset,
-    # Moonset bisa menjadi ⭐ walaupun nominalnya HIGH.
+    # Explicit peak dari Tides4Fishing
     # --------------------------------------------------------
 
-    peak_periods = [
-        p for p in periods
-        if period_is_solar_peak(p, day)
+    explicit = [
+        p
+        for p in periods
+        if p["explicit_peak"]
     ]
 
-    starred = None
+    if explicit:
 
-    if peak_periods:
-
-        # Kalau ada beberapa peak:
-        # pilih yang aktivitasnya paling tinggi.
-        #
-        # Jika level sama, pilih yang paling awal.
-        peak_periods.sort(
-            key=lambda p: (
-                -p["level_num"],
-                p["start"]
-            )
+        peak_level = max(
+            p["level"]
+            for p in explicit
         )
 
-        starred = peak_periods[0]
+        stars = [
+            p
+            for p in explicit
+            if p["level"] == peak_level
+        ]
+
+        return highest, stars
 
     # --------------------------------------------------------
-    # Tampilkan semua highest.
+    # Kalau tidak ada explicit marker:
+    # gunakan sunrise/sunset coincidence.
+    # --------------------------------------------------------
+
+    solar = [
+        p
+        for p in periods
+        if p["solar_peak"]
+    ]
+
+    if not solar:
+        return highest, []
+
+    solar_level = max(
+        p["level"]
+        for p in solar
+    )
+
+    candidates = [
+        p
+        for p in solar
+        if p["level"] == solar_level
+    ]
+
+    # Normalnya hanya satu ⭐.
     #
-    # Kalau starred bukan bagian dari highest,
-    # masukkan juga supaya ⭐ tidak muncul pada waktu
-    # yang tidak terlihat di RSS.
-    # --------------------------------------------------------
+    # Urutan:
+    # - level tertinggi
+    # - lalu periode yang paling dekat dengan sunrise/sunset
+    # - lalu waktu mulai.
+    #
+    # Jangan memakai MAJOR sebagai prioritas otomatis.
 
-    displayed = list(highest_periods)
+    def solar_distance(period):
 
-    if starred is not None:
-        if starred not in displayed:
-            displayed.append(starred)
+        distances = []
 
-    displayed.sort(
+        if sunrise:
+
+            distances.append(
+                distance_to_period(
+                    sunrise,
+                    period
+                )
+            )
+
+        if sunset:
+
+            distances.append(
+                distance_to_period(
+                    sunset,
+                    period
+                )
+            )
+
+        return min(distances)
+
+    candidates.sort(
         key=lambda p: (
-            p["start"],
-            p["end"]
+            solar_distance(p),
+            minutes(p["start"])
         )
     )
 
-    return displayed, starred
+    return highest, [candidates[0]]
 
 
-# ============================================================
-# ASTRONOMICAL FALLBACK
-# ============================================================
-
-def astronomical_periods(day):
+def distance_to_period(
+    event_hm,
+    period
+):
     """
-    Fallback apabila detail HTML tidak berhasil dibaca.
-
-    Ini hanya fallback.
-    Star TIDAK dipaksakan di sini.
+    0 jika event berada di dalam periode.
+    Dipakai hanya untuk tie-breaking.
     """
 
-    result = []
-
-    transit = day.get("transit")
-    antitransit = day.get("antitransit")
-    moonrise = day.get("moonrise")
-    moonset = day.get("moonset")
-
-    if transit:
-        result.append({
-            "type": "major",
-            "level": "sangat tinggi",
-            "level_num": 3,
-            "start": (
-                transit.hour * 60 +
-                transit.minute -
-                60
-            ) % 1440,
-            "end": (
-                transit.hour * 60 +
-                transit.minute +
-                60
-            ) % 1440,
-            "name": "Lunar transit",
-            "peak": False,
-        })
-
-    if antitransit:
-        result.append({
-            "type": "major",
-            "level": "sangat tinggi",
-            "level_num": 3,
-            "start": (
-                antitransit.hour * 60 +
-                antitransit.minute -
-                60
-            ) % 1440,
-            "end": (
-                antitransit.hour * 60 +
-                antitransit.minute +
-                60
-            ) % 1440,
-            "name": "Opposing lunar transit",
-            "peak": False,
-        })
-
-    if moonrise:
-        result.append({
-            "type": "minor",
-            "level": "tinggi",
-            "level_num": 2,
-            "start": (
-                moonrise.hour * 60 +
-                moonrise.minute -
-                30
-            ) % 1440,
-            "end": (
-                moonrise.hour * 60 +
-                moonrise.minute +
-                30
-            ) % 1440,
-            "name": "Moonrise",
-            "peak": False,
-        })
-
-    if moonset:
-        result.append({
-            "type": "minor",
-            "level": "tinggi",
-            "level_num": 2,
-            "start": (
-                moonset.hour * 60 +
-                moonset.minute -
-                30
-            ) % 1440,
-            "end": (
-                moonset.hour * 60 +
-                moonset.minute +
-                30
-            ) % 1440,
-            "name": "Moonset",
-            "peak": False,
-        })
-
-    return result
-
-
-# ============================================================
-# FETCH
-# ============================================================
-
-def fetch_page():
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 "
-            "(Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 "
-            "(KHTML, like Gecko) "
-            "Chrome/154.0 Safari/537.36"
-        )
-    }
-
-    response = requests.get(
-        URL,
-        headers=headers,
-        timeout=30
-    )
-
-    response.raise_for_status()
-
-    return response.text
-
-
-# ============================================================
-# EPHEMERIS
-# ============================================================
-
-def compute_days(start_date, count=14):
-    if ephem is None:
-        raise RuntimeError(
-            "Module 'ephem' belum terinstall. "
-            "Jalankan: pip install ephem"
-        )
-
-    # Koordinat kira-kira Palihan/Yogyakarta.
-    # Dipakai hanya untuk fallback astronomi.
-    observer = ephem.Observer()
-
-    observer.lat = "-7.80"
-    observer.lon = "110.36"
-
-    result = []
-
-    for i in range(count):
-
-        date = start_date + dt.timedelta(days=i)
-
-        observer.date = dt.datetime(
-            date.year,
-            date.month,
-            date.day,
-            0,
-            0,
-            0
-        )
-
-        sun = ephem.Sun(observer)
-        moon = ephem.Moon(observer)
-
-        try:
-            sunrise_ephem = observer.next_rising(
-                ephem.Sun(observer)
-            )
-            sunset_ephem = observer.next_setting(
-                ephem.Sun(observer)
-            )
-        except Exception:
-            sunrise_ephem = None
-            sunset_ephem = None
-
-        try:
-            moonrise_ephem = observer.next_rising(
-                ephem.Moon(observer)
-            )
-            moonset_ephem = observer.next_setting(
-                ephem.Moon(observer)
-            )
-        except Exception:
-            moonrise_ephem = None
-            moonset_ephem = None
-
-        try:
-            transit_ephem = observer.next_transit(
-                ephem.Moon(observer)
-            )
-        except Exception:
-            transit_ephem = None
-
-        try:
-            antitransit_ephem = observer.next_antitransit(
-                ephem.Moon(observer)
-            )
-        except Exception:
-            antitransit_ephem = None
-
-        def convert(value):
-            if value is None:
-                return None
-
-            d = ephem.Date(value).datetime()
-
-            # UTC -> WIB
-            d = d.replace(
-                tzinfo=dt.timezone.utc
-            ).astimezone(TZ)
-
-            return d
-
-        result.append({
-            "date": date,
-            "sunrise": convert(sunrise_ephem),
-            "sunset": convert(sunset_ephem),
-            "moonrise": convert(moonrise_ephem),
-            "moonset": convert(moonset_ephem),
-            "transit": convert(transit_ephem),
-            "antitransit": convert(antitransit_ephem),
-        })
-
-    return result
-
-
-# ============================================================
-# FORMATTING
-# ============================================================
-
-def _hm(value):
-    if value is None:
-        return ""
-
-    return value.strftime("%H:%M")
-
-
-def _win(center, before, after):
-    if center is None:
-        return None
-
-    start = center - before
-    end = center + after
-
-    return (
-        _hm(start),
-        _hm(end)
-    )
-
-
-def period_text(period, starred=False):
-    start = format_minutes(
-        period["start"]
-    )
-
-    end = format_minutes(
+    if in_period(
+        event_hm,
+        period["start"],
         period["end"]
+    ):
+        return 0
+
+    event = minutes(event_hm)
+    start = minutes(period["start"])
+    end = minutes(period["end"])
+
+    if start <= end:
+
+        if event < start:
+            return start - event
+
+        return event - end
+
+    # Cross midnight.
+    if event > end and event < start:
+        return min(
+            event - end,
+            start - event
+        )
+
+    return 0
+
+
+# ============================================================
+# COEFFICIENT
+# ============================================================
+
+def parse_coefficient(
+    soup,
+    target_date
+):
+    """
+    Membaca koefisien dari tabel bulanan jika tersedia.
+    """
+
+    target_day = str(
+        target_date.day
     )
 
-    star = "⭐ " if starred else ""
+    for tr in soup.find_all("tr"):
 
+        row = clean(
+            tr.get_text(
+                " ",
+                strip=True
+            )
+        )
+
+        if not re.search(
+            rf"\b{re.escape(target_day)}\b",
+            row
+        ):
+            continue
+
+        # Contoh umum:
+        # 7 Wed 81 high
+        m = re.search(
+            r"\b(\d{1,3})\b\s+"
+            r"(very high|high|average|low)\b",
+            row,
+            re.I
+        )
+
+        if m:
+            return (
+                f"{m.group(1)} "
+                f"({m.group(2).lower()})"
+            )
+
+    # Fallback dari halaman tanggal.
+    text = clean(
+        soup.get_text(
+            " ",
+            strip=True
+        )
+    )
+
+    m = re.search(
+        r"tidal coefficient today is\s+"
+        r"(\d{1,3})",
+        text,
+        re.I
+    )
+
+    if m:
+        return m.group(1)
+
+    return "-"
+
+
+# ============================================================
+# DATE LABEL
+# ============================================================
+
+def date_label(date):
     return (
-        f"{star}{start}–{end}"
+        f"{HARI[date.weekday()]} "
+        f"{date.day:02d} "
+        f"{BULAN[date.month]}"
     )
 
 
 # ============================================================
-# FISHING STATUS
+# RSS TITLE
 # ============================================================
 
-def fishing_status(level):
-    mapping = {
-        "rendah": ("🔴", "BURUK"),
-        "sedang": ("🟡", "SEDANG"),
-        "tinggi": ("🟢", "BAGUS"),
-        "sangat tinggi": ("🟢", "SANGAT BAGUS"),
+def build_title(
+    date,
+    status_level,
+    selected,
+    stars
+):
+    """
+    Contoh:
+
+    🟢 10 Okt | SANGAT BAGUS |
+    ⭐ 16:45–17:45, 04:15–05:15,
+    10:00–12:00, 22:20–00:20
+    """
+
+    status = STATUS.get(
+        status_level,
+        "🟡 SEDANG"
+    )
+
+    star_keys = {
+        (
+            p["start"],
+            p["end"],
+            p["name"]
+        )
+        for p in stars
     }
 
-    return mapping.get(
-        level,
-        ("🟡", "SEDANG")
+    parts = []
+
+    for period in selected:
+
+        key = (
+            period["start"],
+            period["end"],
+            period["name"]
+        )
+
+        prefix = (
+            "⭐ "
+            if key in star_keys
+            else ""
+        )
+
+        parts.append(
+            prefix
+            + period["start"]
+            + "–"
+            + period["end"]
+        )
+
+    periods = ", ".join(parts)
+
+    # Emoji status hanya satu.
+    emoji = status[:2]
+
+    status_without_emoji = status[2:].strip()
+
+    return (
+        f"{emoji} "
+        f"{date.day:02d} {BULAN[date.month]} | "
+        f"{status_without_emoji} | "
+        f"{periods or '-'}"
     )
 
 
 # ============================================================
-# RSS ENTRY
+# RSS DESCRIPTION
 # ============================================================
 
-def build_entry(day, fish_level, detailed_periods=None):
-    date = day["date"]
+def build_description(
+    date,
+    data,
+    coefficient
+):
+    selected = data["selected"]
+    stars = data["stars"]
 
-    emoji, status = fishing_status(
-        fish_level
+    star_keys = {
+        (
+            p["start"],
+            p["end"],
+            p["name"]
+        )
+        for p in stars
+    }
+
+    rows = []
+
+    for p in selected:
+
+        key = (
+            p["start"],
+            p["end"],
+            p["name"]
+        )
+
+        star = (
+            "⭐"
+            if key in star_keys
+            else ""
+        )
+
+        rows.append(
+            "<tr>"
+            f"<td>{html.escape(star)}</td>"
+            f"<td>{html.escape(p['start'])}"
+            f"–{html.escape(p['end'])}</td>"
+            f"<td>{html.escape(p['name'])}</td>"
+            f"<td>{html.escape(activity_text(p['level']))}</td>"
+            f"<td>{html.escape(p['kind'].upper())}</td>"
+            "</tr>"
+        )
+
+    table = (
+        "<table border='1' "
+        "cellpadding='5' "
+        "cellspacing='0'>"
+        "<tr>"
+        "<th></th>"
+        "<th>Waktu</th>"
+        "<th>Periode</th>"
+        "<th>Aktivitas</th>"
+        "<th>Jenis</th>"
+        "</tr>"
+        + "".join(rows)
+        + "</table>"
     )
 
+    status = STATUS.get(
+        data["status_level"],
+        "🟡 SEDANG"
+    )
+
+    return (
+        f"<b>{html.escape(date_label(date))}</b><br>"
+        f"<b>Status:</b> {html.escape(status)}<br>"
+        f"<b>Koefisien pasang surut:</b> "
+        f"{html.escape(coefficient)}<br>"
+        f"<b>Sunrise:</b> "
+        f"{html.escape(data['sunrise'] or '-')}<br>"
+        f"<b>Sunset:</b> "
+        f"{html.escape(data['sunset'] or '-')}<br>"
+        "<br>"
+        "<b>Periode aktivitas tertinggi:</b><br>"
+        f"{table}<br>"
+        "<small>"
+        "Sumber: Tides4Fishing"
+        "</small>"
+    )
+
+
+# ============================================================
+# SELENIUM
+# ============================================================
+
+def make_driver():
+    options = webdriver.ChromeOptions()
+
+    options.add_argument(
+        "--headless=new"
+    )
+
+    options.add_argument(
+        "--disable-gpu"
+    )
+
+    options.add_argument(
+        "--no-sandbox"
+    )
+
+    options.add_argument(
+        "--disable-dev-shm-usage"
+    )
+
+    options.add_argument(
+        "--window-size=1600,1200"
+    )
+
+    options.add_argument(
+        "--lang=en-US"
+    )
+
+    options.add_argument(
+        "--user-agent=Mozilla/5.0 "
+        "(Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 "
+        "(KHTML, like Gecko) "
+        "Chrome/154.0.0.0 Safari/537.36"
+    )
+
+    return webdriver.Chrome(
+        options=options
+    )
+
+
+def wait_for_page(driver):
+    WebDriverWait(
+        driver,
+        30
+    ).until(
+        lambda d:
+        d.find_element(
+            By.TAG_NAME,
+            "body"
+        )
+    )
+
+
+# ============================================================
+# OPEN SPECIFIC DATE
+# ============================================================
+
+def open_date(
+    driver,
+    target_date
+):
+    """
+    Tides4Fishing menggunakan:
+
+        javascript:Day('YYYY-MM-DD');
+
+    Jadi kita klik tombol kalender tersebut.
+
+    Kita sengaja TIDAK menebak:
+        ?date=
+        ?day=
+        /YYYY-MM-DD
+
+    """
+
+    iso = target_date.isoformat()
+
+    element = None
+
     # --------------------------------------------------------
-    # Detailed Tides4Fishing periods
+    # Cara pertama: CSS onclick
     # --------------------------------------------------------
 
-    periods = detailed_periods or []
+    selectors = [
+        f"[onclick*=\"{iso}\"]",
+        f"[onclick*=\"'{iso}'\"]",
+        f"[onclick*='\"{iso}\"']",
+    ]
+
+    for selector in selectors:
+
+        try:
+
+            elements = driver.find_elements(
+                By.CSS_SELECTOR,
+                selector
+            )
+
+            if elements:
+
+                element = elements[0]
+                break
+
+        except Exception:
+            pass
+
+    # --------------------------------------------------------
+    # Cara kedua: scan semua onclick
+    # --------------------------------------------------------
+
+    if element is None:
+
+        elements = driver.find_elements(
+            By.XPATH,
+            "//*[@onclick]"
+        )
+
+        for el in elements:
+
+            onclick = (
+                el.get_attribute(
+                    "onclick"
+                )
+                or ""
+            )
+
+            if iso in onclick:
+
+                element = el
+                break
+
+    if element is None:
+
+        raise RuntimeError(
+            f"Tombol kalender untuk "
+            f"{iso} tidak ditemukan."
+        )
+
+    # Scroll ke tombol.
+    driver.execute_script(
+        """
+        arguments[0].scrollIntoView({
+            block: 'center'
+        });
+        """,
+        element
+    )
+
+    time.sleep(0.2)
+
+    # Klik.
+    try:
+
+        element.click()
+
+    except Exception:
+
+        driver.execute_script(
+            "arguments[0].click();",
+            element
+        )
+
+    # Tunggu DOM berubah / selesai.
+    WebDriverWait(
+        driver,
+        30
+    ).until(
+        lambda d:
+        "SOLUNAR ACTIVITY"
+        in clean(
+            d.find_element(
+                By.TAG_NAME,
+                "body"
+            ).text
+        ).upper()
+    )
+
+    time.sleep(0.7)
+
+
+# ============================================================
+# SCRAPE ONE DATE
+# ============================================================
+
+def scrape_current_page(
+    driver,
+    date
+):
+    source = driver.page_source
+
+    soup = BeautifulSoup(
+        source,
+        "html.parser"
+    )
+
+    periods = parse_detailed_periods(
+        soup
+    )
 
     if not periods:
-        periods = astronomical_periods(day)
 
-    displayed, starred = select_best_periods(
+        raise RuntimeError(
+            f"{date.isoformat()}: "
+            "MAJOR/MINOR tidak ditemukan."
+        )
+
+    sunrise, sunset = parse_sun_times(
+        soup
+    )
+
+    selected, stars = choose_best_periods(
         periods,
-        day
+        sunrise,
+        sunset
     )
 
-    time_parts = []
-
-    for period in displayed:
-
-        is_starred = (
-            starred is not None
-            and period is starred
-        )
-
-        time_parts.append(
-            period_text(
-                period,
-                starred=is_starred
-            )
-        )
-
-    times = ", ".join(time_parts)
-
-    title = (
-        f"{emoji} "
-        f"{date.day} {ID_MONTHS[date.month - 1][:3]} "
-        f"| {status}"
+    overall = parse_overall_activity(
+        soup
     )
 
-    if times:
-        title += f" | {times}"
+    # Jika aktivitas harian tidak ada,
+    # gunakan level tertinggi MAJOR/MINOR.
+    if overall is None:
 
-    # --------------------------------------------------------
-    # Description
-    # --------------------------------------------------------
-
-    description_parts = [
-        f"Aktivitas ikan: {status}"
-    ]
-
-    if day.get("sunrise"):
-        description_parts.append(
-            f"Sunrise: {_hm(day['sunrise'])}"
+        overall = max(
+            p["level"]
+            for p in periods
         )
 
-    if day.get("sunset"):
-        description_parts.append(
-            f"Sunset: {_hm(day['sunset'])}"
-        )
-
-    if day.get("moonrise"):
-        description_parts.append(
-            f"Moonrise: {_hm(day['moonrise'])}"
-        )
-
-    if day.get("moonset"):
-        description_parts.append(
-            f"Moonset: {_hm(day['moonset'])}"
-        )
-
-    description = " | ".join(
-        description_parts
+    coefficient = parse_coefficient(
+        soup,
+        date
     )
 
     return {
-        "title": title,
-        "description": description,
-        "date": date,
+        "status_level": overall,
+        "sunrise": sunrise,
+        "sunset": sunset,
+        "periods": periods,
+        "selected": selected,
+        "stars": stars,
+        "coefficient": coefficient,
     }
 
 
 # ============================================================
-# RSS WRITER
+# SCRAPE N DAYS
 # ============================================================
 
-def xml_escape(value):
-    if value is None:
-        return ""
+def scrape_days(
+    start_date,
+    number_of_days
+):
+    driver = make_driver()
 
-    return (
-        str(value)
-        .replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-        .replace("'", "&apos;")
+    results = {}
+
+    try:
+
+        print()
+        print(
+            "Membuka Tides4Fishing..."
+        )
+
+        driver.get(URL)
+
+        wait_for_page(
+            driver
+        )
+
+        for index in range(
+            number_of_days
+        ):
+
+            date = (
+                start_date
+                + dt.timedelta(days=index)
+            )
+
+            print(
+                f"[{index + 1}/"
+                f"{number_of_days}] "
+                f"{date.isoformat()}"
+            )
+
+            if index > 0:
+
+                open_date(
+                    driver,
+                    date
+                )
+
+            data = scrape_current_page(
+                driver,
+                date
+            )
+
+            results[date] = data
+
+            print(
+                f"    Status: "
+                f"{STATUS[data['status_level']]}"
+            )
+
+            for period in data["selected"]:
+
+                star = (
+                    " ⭐"
+                    if period in data["stars"]
+                    else ""
+                )
+
+                print(
+                    f"    "
+                    f"{period['start']}"
+                    f"-"
+                    f"{period['end']} "
+                    f"{period['name']} "
+                    f"{activity_text(period['level'])}"
+                    f"{star}"
+                )
+
+    finally:
+
+        driver.quit()
+
+    return results
+
+
+# ============================================================
+# WRITE RSS
+# ============================================================
+
+def write_feed(
+    output,
+    results
+):
+    feed = FeedGenerator()
+
+    feed.title(
+        "Aktivitas Ikan Palihan"
     )
 
+    feed.link(
+        href=URL,
+        rel="alternate"
+    )
 
-def write_feed(entries, filename):
+    feed.description(
+        "Aktivitas ikan dan waktu "
+        "solunar Palihan berdasarkan "
+        "Tides4Fishing."
+    )
+
+    feed.language("id")
+
     now = dt.datetime.now(TZ)
 
-    rss = [
-        '<?xml version="1.0" encoding="UTF-8"?>',
-        '<rss version="2.0">',
-        "<channel>",
-        "<title>Palihan Fishing Activity</title>",
-        f"<link>{xml_escape(URL)}</link>",
-        "<description>Aktivitas ikan Palihan</description>",
-        f"<lastBuildDate>{now.strftime('%a, %d %b %Y %H:%M:%S %z')}</lastBuildDate>",
-    ]
+    for index, (
+        date,
+        data
+    ) in enumerate(
+        results.items()
+    ):
 
-    for entry in entries:
-
-        pub_date = dt.datetime.combine(
-            entry["date"],
-            dt.time(
-                6,
-                0
-            ),
-            tzinfo=TZ
+        title = build_title(
+            date,
+            data["status_level"],
+            data["selected"],
+            data["stars"]
         )
 
-        rss.extend([
-            "<item>",
-            f"<title>{xml_escape(entry['title'])}</title>",
-            f"<description>{xml_escape(entry['description'])}</description>",
-            f"<pubDate>{pub_date.strftime('%a, %d %b %Y %H:%M:%S %z')}</pubDate>",
-            f"<guid>{entry['date'].isoformat()}</guid>",
-            "</item>",
-        ])
-
-    rss.extend([
-        "</channel>",
-        "</rss>",
-    ])
-
-    with open(
-        filename,
-        "w",
-        encoding="utf-8"
-    ) as f:
-        f.write(
-            "\n".join(rss)
+        description = build_description(
+            date,
+            data,
+            data["coefficient"]
         )
+
+        entry = feed.add_entry()
+
+        entry.id(
+            f"palihan-{date.isoformat()}"
+        )
+
+        entry.title(
+            title
+        )
+
+        entry.link(
+            href=URL
+        )
+
+        entry.description(
+            description
+        )
+
+        entry.pubDate(
+            now - dt.timedelta(
+                minutes=index
+            )
+        )
+
+    feed.rss_file(
+        output,
+        pretty=True
+    )
+
+    print()
+    print(
+        f"RSS berhasil dibuat: "
+        f"{output}"
+    )
 
 
 # ============================================================
@@ -1114,134 +1346,76 @@ def write_feed(entries, filename):
 # ============================================================
 
 def main():
-    parser = argparse.ArgumentParser()
 
-    parser.add_argument(
-        "--output",
-        default="palihan.xml"
-    )
+    parser = argparse.ArgumentParser()
 
     parser.add_argument(
         "--days",
         type=int,
-        default=14
+        default=DEFAULT_DAYS,
+        help=(
+            "Jumlah hari yang diambil. "
+            "Default: 14"
+        )
+    )
+
+    parser.add_argument(
+        "--output",
+        default="palihan.xml",
+        help=(
+            "Nama file RSS. "
+            "Default: palihan.xml"
+        )
     )
 
     args = parser.parse_args()
 
-    print("Mengambil halaman Tides4Fishing...")
-
-    html = fetch_page()
-
-    soup = BeautifulSoup(
-        html,
-        "html.parser"
+    now = dt.datetime.now(
+        TZ
     )
 
-    print("Parsing aktivitas ikan...")
+    start_date = now.date()
 
-    coefficients = parse_coefficients(
-        soup
+    print(
+        "========================================"
     )
-
-    fish_activity = parse_solunar(
-        soup
+    print(
+        " RSS AKTIVITAS IKAN PALIHAN"
     )
-
-    print("Parsing periode solunar detail...")
-
-    detailed_periods = parse_detailed_periods(
-        soup
+    print(
+        "========================================"
     )
 
     print(
-        f"Ditemukan {len(detailed_periods)} "
-        "periode detail."
+        f"Mulai : {start_date}"
     )
 
-    today = dt.datetime.now(
-        TZ
-    ).date()
+    print(
+        f"Hari  : {args.days}"
+    )
 
-    days = compute_days(
-        today,
+    print(
+        "Sumber: Tides4Fishing"
+    )
+
+    print(
+        "Mode  : BACA DATA TIAP TANGGAL"
+    )
+
+    print(
+        "========================================"
+    )
+
+    results = scrape_days(
+        start_date,
         args.days
     )
 
-    entries = []
-
-    for index, day in enumerate(days):
-
-        date = day["date"]
-
-        fish = fish_activity.get(
-            date.day
-        )
-
-        if fish:
-            fish_level = fish["level"]
-        else:
-            # fallback berdasarkan coefficient
-            coeff = coefficients.get(
-                date.day
-            )
-
-            if coeff:
-                status = coeff["status"].lower()
-
-                if "very high" in status:
-                    fish_level = "sangat tinggi"
-                elif "high" in status:
-                    fish_level = "tinggi"
-                elif (
-                    "average" in status
-                    or "medium" in status
-                ):
-                    fish_level = "sedang"
-                else:
-                    fish_level = "rendah"
-            else:
-                fish_level = "sedang"
-
-        # ----------------------------------------------------
-        # Halaman utama hanya memberikan detail periode
-        # untuk hari yang sedang dibuka.
-        #
-        # Jadi detail periode HTML dipakai untuk hari pertama.
-        # Hari berikutnya menggunakan fallback astronomi.
-        # ----------------------------------------------------
-
-        if index == 0:
-            periods = detailed_periods
-        else:
-            periods = []
-
-        entry = build_entry(
-            day,
-            fish_level,
-            periods
-        )
-
-        entries.append(entry)
-
-        print(
-            entry["title"]
-        )
-
     write_feed(
-        entries,
-        args.output
-    )
-
-    print()
-    print(
-        f"RSS berhasil dibuat: {args.output}"
+        args.output,
+        results
     )
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except Exception:
-        traceback.print_exc()
-        raise
+    main()
