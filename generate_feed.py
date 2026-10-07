@@ -896,7 +896,7 @@ def build_entry(
     title = (
         f"{label} | "
         f"Koef {coefficient or '-'} · "
-        f"Solunar {solunar_text} | "
+        f"Aktivitas Ikan {solunar_text} | "
         f"{major}"
     )
 
@@ -907,7 +907,7 @@ def build_entry(
 
         "<tr>"
         "<th>Koefisien pasang surut</th>"
-        "<th>Aktivitas solunar</th>"
+        "<th>Aktivitas Ikan</th>"
         "</tr>"
 
         "<tr>"
@@ -960,7 +960,7 @@ def write_feed(
     feed = FeedGenerator()
 
     feed.title(
-        "Solunar Palihan"
+        "Aktivitas Ikan Palihan"
     )
 
     feed.link(
@@ -969,9 +969,9 @@ def write_feed(
     )
 
     feed.description(
-        "Prediksi jam makan ikan "
+        "Prediksi aktivitas ikan "
         "Palihan: koefisien pasang surut "
-        "+ aktivitas solunar"
+        "+ aktivitas ikan"
     )
 
     feed.language("id")
@@ -1113,7 +1113,7 @@ def main():
 
         print(
             f"[scrape] "
-            f"Solunar days from site: "
+            f"Aktivitas ikan days from site: "
             f"{len(site_solunar)}"
         )
 
