@@ -1,110 +1,110 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0">
   <channel>
-    <title>Solunar Palihan</title>
+    <title>Aktivitas Ikan Palihan</title>
     <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-    <description>Prediksi jam makan ikan Palihan: koefisien pasang surut + aktivitas solunar</description>
+    <description>Prediksi aktivitas ikan Palihan: koefisien pasang surut + aktivitas ikan</description>
     <docs>http://www.rssboard.org/rss-specification</docs>
     <generator>python-feedgen</generator>
     <language>id</language>
-    <lastBuildDate>Wed, 07 Oct 2026 12:43:21 +0000</lastBuildDate>
+    <lastBuildDate>Wed, 07 Oct 2026 12:53:06 +0000</lastBuildDate>
     <item>
-      <title>Sel, 20 Okt | Koef 43 (rendah) · Solunar rendah | Major: 19:04 &amp; 06:41</title>
+      <title>Sel, 20 Okt | Koef 43 (rendah) · Aktivitas Ikan rendah | Major: 19:04 &amp; 06:41</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;43 (rendah)&lt;/td&gt;&lt;td&gt;rendah&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 18:04 - 20:04&lt;br&gt;• 05:41 - 07:41&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 12:12 - 13:12 (Terbit)&lt;br&gt;• 00:11 - 01:11 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;43 (rendah)&lt;/td&gt;&lt;td&gt;rendah&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 18:04 - 20:04&lt;br&gt;• 05:41 - 07:41&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 12:12 - 13:12 (Terbit)&lt;br&gt;• 00:11 - 01:11 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-20</guid>
-      <pubDate>Wed, 07 Oct 2026 06:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 06:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Sen, 19 Okt | Koef 32 (rendah) · Solunar tinggi | Major: 18:18 &amp; 05:55</title>
+      <title>Sen, 19 Okt | Koef 32 (rendah) · Aktivitas Ikan tinggi | Major: 18:18 &amp; 05:55</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;32 (rendah)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 17:18 - 19:18&lt;br&gt;• 04:55 - 06:55&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 11:23 - 12:23 (Terbit)&lt;br&gt;• - (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;32 (rendah)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 17:18 - 19:18&lt;br&gt;• 04:55 - 06:55&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 11:23 - 12:23 (Terbit)&lt;br&gt;• - (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-19</guid>
-      <pubDate>Wed, 07 Oct 2026 07:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 07:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Min, 18 Okt | Koef 28 (rendah) · Solunar tinggi | Major: 17:31 &amp; 05:06</title>
+      <title>Min, 18 Okt | Koef 28 (rendah) · Aktivitas Ikan tinggi | Major: 17:31 &amp; 05:06</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;28 (rendah)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 16:31 - 18:31&lt;br&gt;• 04:06 - 06:06&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 10:33 - 11:33 (Terbit)&lt;br&gt;• 23:27 - 00:27 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;28 (rendah)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 16:31 - 18:31&lt;br&gt;• 04:06 - 06:06&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 10:33 - 11:33 (Terbit)&lt;br&gt;• 23:27 - 00:27 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-18</guid>
-      <pubDate>Wed, 07 Oct 2026 08:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 08:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Sab, 17 Okt | Koef 32 (rendah) · Solunar tinggi | Major: 16:41 &amp; 04:16</title>
+      <title>Sab, 17 Okt | Koef 32 (rendah) · Aktivitas Ikan tinggi | Major: 16:41 &amp; 04:16</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;32 (rendah)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 15:41 - 17:41&lt;br&gt;• 03:16 - 05:16&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 09:42 - 10:42 (Terbit)&lt;br&gt;• 22:40 - 23:40 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;32 (rendah)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 15:41 - 17:41&lt;br&gt;• 03:16 - 05:16&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 09:42 - 10:42 (Terbit)&lt;br&gt;• 22:40 - 23:40 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-17</guid>
-      <pubDate>Wed, 07 Oct 2026 09:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 09:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Jum, 16 Okt | Koef 41 (rendah) · Solunar sedang | Major: 15:51 &amp; 03:25</title>
+      <title>Jum, 16 Okt | Koef 41 (rendah) · Aktivitas Ikan sedang | Major: 15:51 &amp; 03:25</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;41 (rendah)&lt;/td&gt;&lt;td&gt;sedang&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 14:51 - 16:51&lt;br&gt;• 02:25 - 04:25&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 08:50 - 09:50 (Terbit)&lt;br&gt;• 21:50 - 22:50 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;41 (rendah)&lt;/td&gt;&lt;td&gt;sedang&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 14:51 - 16:51&lt;br&gt;• 02:25 - 04:25&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 08:50 - 09:50 (Terbit)&lt;br&gt;• 21:50 - 22:50 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-16</guid>
-      <pubDate>Wed, 07 Oct 2026 10:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 10:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Kam, 15 Okt | Koef 53 (sedang) · Solunar rendah | Major: 14:59 &amp; 02:33</title>
+      <title>Kam, 15 Okt | Koef 53 (sedang) · Aktivitas Ikan rendah | Major: 14:59 &amp; 02:33</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;53 (sedang)&lt;/td&gt;&lt;td&gt;rendah&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 13:59 - 15:59&lt;br&gt;• 01:33 - 03:33&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 07:59 - 08:59 (Terbit)&lt;br&gt;• 20:59 - 21:59 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;53 (sedang)&lt;/td&gt;&lt;td&gt;rendah&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 13:59 - 15:59&lt;br&gt;• 01:33 - 03:33&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 07:59 - 08:59 (Terbit)&lt;br&gt;• 20:59 - 21:59 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-15</guid>
-      <pubDate>Wed, 07 Oct 2026 11:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 11:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Rab, 14 Okt | Koef 65 (sedang) · Solunar sedang | Major: 14:08 &amp; 01:43</title>
+      <title>Rab, 14 Okt | Koef 65 (sedang) · Aktivitas Ikan sedang | Major: 14:08 &amp; 01:43</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;65 (sedang)&lt;/td&gt;&lt;td&gt;sedang&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 13:08 - 15:08&lt;br&gt;• 00:43 - 02:43&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 07:10 - 08:10 (Terbit)&lt;br&gt;• 20:07 - 21:07 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;65 (sedang)&lt;/td&gt;&lt;td&gt;sedang&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 13:08 - 15:08&lt;br&gt;• 00:43 - 02:43&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 07:10 - 08:10 (Terbit)&lt;br&gt;• 20:07 - 21:07 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-14</guid>
-      <pubDate>Wed, 07 Oct 2026 12:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 12:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Sel, 13 Okt | Koef 76 (tinggi) · Solunar tinggi | Major: 13:18 &amp; 00:54</title>
+      <title>Sel, 13 Okt | Koef 76 (tinggi) · Aktivitas Ikan tinggi | Major: 13:18 &amp; 00:54</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;76 (tinggi)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 12:18 - 14:18&lt;br&gt;• 23:54 - 01:54&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 06:23 - 07:23 (Terbit)&lt;br&gt;• 19:14 - 20:14 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;76 (tinggi)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 12:18 - 14:18&lt;br&gt;• 23:54 - 01:54&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 06:23 - 07:23 (Terbit)&lt;br&gt;• 19:14 - 20:14 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-13</guid>
-      <pubDate>Wed, 07 Oct 2026 13:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 13:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Sen, 12 Okt | Koef 85 (tinggi) · Solunar sangat tinggi | Major: 12:30 &amp; 00:07</title>
+      <title>Sen, 12 Okt | Koef 85 (tinggi) · Aktivitas Ikan sangat tinggi | Major: 12:30 &amp; 00:07</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;85 (tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 11:30 - 13:30&lt;br&gt;• 23:07 - 01:07&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 05:38 - 06:38 (Terbit)&lt;br&gt;• 18:23 - 19:23 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;85 (tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 11:30 - 13:30&lt;br&gt;• 23:07 - 01:07&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 05:38 - 06:38 (Terbit)&lt;br&gt;• 18:23 - 19:23 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-12</guid>
-      <pubDate>Wed, 07 Oct 2026 14:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 14:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Min, 11 Okt | Koef 92 (sangat tinggi) · Solunar sangat tinggi | Major: 11:44 &amp; -</title>
+      <title>Min, 11 Okt | Koef 92 (sangat tinggi) · Aktivitas Ikan sangat tinggi | Major: 11:44 &amp; -</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;92 (sangat tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 10:44 - 12:44&lt;br&gt;• -&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 04:56 - 05:56 (Terbit)&lt;br&gt;• 17:34 - 18:34 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;92 (sangat tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 10:44 - 12:44&lt;br&gt;• -&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 04:56 - 05:56 (Terbit)&lt;br&gt;• 17:34 - 18:34 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-11</guid>
-      <pubDate>Wed, 07 Oct 2026 15:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 15:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Sab, 10 Okt | Koef 96 (sangat tinggi) · Solunar sangat tinggi | Major: 10:59 &amp; 23:21</title>
+      <title>Sab, 10 Okt | Koef 96 (sangat tinggi) · Aktivitas Ikan sangat tinggi | Major: 10:59 &amp; 23:21</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;96 (sangat tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 09:59 - 11:59&lt;br&gt;• 22:21 - 00:21&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 04:15 - 05:15 (Terbit)&lt;br&gt;• 16:45 - 17:45 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;96 (sangat tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 09:59 - 11:59&lt;br&gt;• 22:21 - 00:21&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 04:15 - 05:15 (Terbit)&lt;br&gt;• 16:45 - 17:45 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-10</guid>
-      <pubDate>Wed, 07 Oct 2026 16:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 16:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Jum, 09 Okt | Koef 95 (sangat tinggi) · Solunar sangat tinggi | Major: 10:14 &amp; 22:37</title>
+      <title>Jum, 09 Okt | Koef 95 (sangat tinggi) · Aktivitas Ikan sangat tinggi | Major: 10:14 &amp; 22:37</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;95 (sangat tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 09:14 - 11:14&lt;br&gt;• 21:37 - 23:37&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 03:34 - 04:34 (Terbit)&lt;br&gt;• 15:57 - 16:57 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;95 (sangat tinggi)&lt;/td&gt;&lt;td&gt;sangat tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 09:14 - 11:14&lt;br&gt;• 21:37 - 23:37&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 03:34 - 04:34 (Terbit)&lt;br&gt;• 15:57 - 16:57 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-09</guid>
-      <pubDate>Wed, 07 Oct 2026 17:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 17:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Kam, 08 Okt | Koef 91 (sangat tinggi) · Solunar tinggi | Major: 09:29 &amp; 21:52</title>
+      <title>Kam, 08 Okt | Koef 91 (sangat tinggi) · Aktivitas Ikan tinggi | Major: 09:29 &amp; 21:52</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;91 (sangat tinggi)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 08:29 - 10:29&lt;br&gt;• 20:52 - 22:52&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 02:52 - 03:52 (Terbit)&lt;br&gt;• 15:08 - 16:08 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;91 (sangat tinggi)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 08:29 - 10:29&lt;br&gt;• 20:52 - 22:52&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 02:52 - 03:52 (Terbit)&lt;br&gt;• 15:08 - 16:08 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-08</guid>
-      <pubDate>Wed, 07 Oct 2026 18:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 18:53:05 +0700</pubDate>
     </item>
     <item>
-      <title>Hari ini | Koef 81 (tinggi) · Solunar tinggi | Major: 08:42 &amp; 21:06</title>
+      <title>Hari ini | Koef 81 (tinggi) · Aktivitas Ikan tinggi | Major: 08:42 &amp; 21:06</title>
       <link>https://tides4fishing.com/id/yogyakarta/palihan</link>
-      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas solunar&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;81 (tinggi)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 07:42 - 09:42&lt;br&gt;• 20:06 - 22:06&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 02:08 - 03:08 (Terbit)&lt;br&gt;• 14:18 - 15:18 (Terbenam)</description>
+      <description>&lt;table border='1' cellpadding='4' cellspacing='0'&gt;&lt;tr&gt;&lt;th&gt;Koefisien pasang surut&lt;/th&gt;&lt;th&gt;Aktivitas Ikan&lt;/th&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;81 (tinggi)&lt;/td&gt;&lt;td&gt;tinggi&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;&lt;br&gt;&lt;i&gt;data langsung dari Tides4Fishing&lt;/i&gt;&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Utama (Major):&lt;/b&gt;&lt;br&gt;• 07:42 - 09:42&lt;br&gt;• 20:06 - 22:06&lt;br&gt;&lt;br&gt;&lt;b&gt;Waktu Tambahan (Minor):&lt;/b&gt;&lt;br&gt;• 02:08 - 03:08 (Terbit)&lt;br&gt;• 14:18 - 15:18 (Terbenam)</description>
       <guid isPermaLink="false">palihan-2026-10-07</guid>
-      <pubDate>Wed, 07 Oct 2026 19:43:19 +0700</pubDate>
+      <pubDate>Wed, 07 Oct 2026 19:53:05 +0700</pubDate>
     </item>
   </channel>
 </rss>
