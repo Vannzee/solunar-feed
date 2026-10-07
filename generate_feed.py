@@ -16,7 +16,6 @@ import argparse
 import datetime
 import re
 import traceback
-import os
 from collections import Counter
 from zoneinfo import ZoneInfo
 
@@ -29,16 +28,6 @@ from bs4 import BeautifulSoup
 # ============================================================
 
 URL = "https://tides4fishing.com/id/yogyakarta/palihan"
-
-# Public URL where GitHub Pages serves the generated images.
-# Set this in GitHub Actions. Example:
-#   https://vannzee.github.io/solunar-feed/images
-IMAGE_BASE_URL = os.environ.get(
-    "IMAGE_BASE_URL",
-    "",
-).rstrip("/")
-
-IMAGE_DIR = "images"
 
 TZ = ZoneInfo("Asia/Jakarta")
 UTC = datetime.timezone.utc
@@ -316,6 +305,7 @@ def parse_coefficients(
             )
 
             try:
+
                 date = datetime.date(
                     year,
                     month,
@@ -323,6 +313,7 @@ def parse_coefficients(
                 )
 
             except ValueError:
+
                 continue
 
             out.setdefault(
@@ -419,8 +410,8 @@ def parse_solunar(
             day_match.group(1)
         )
 
-        # Find activity cell by exact class.
-        # The cell has rowspan="2".
+        # Exact activity cell.
+        # This cell has rowspan="2".
         activity_cells = tr.find_all(
             "td",
             class_="tabla_mareas_actividad",
@@ -434,7 +425,6 @@ def parse_solunar(
         if sample is None:
             sample = str(tr)[:5000]
 
-        # Count active fish.
         active_fish = len(
             cell.find_all(
                 "span",
@@ -442,7 +432,6 @@ def parse_solunar(
             )
         )
 
-        # Convert fish count to Indonesian level.
         level = parse_fish_activity(
             cell
         )
@@ -456,6 +445,7 @@ def parse_solunar(
             )
 
         except ValueError:
+
             continue
 
         out.setdefault(
@@ -474,213 +464,7 @@ def parse_solunar(
 
 
 # ============================================================
-# SCREENSHOT TIDE TABLE
-# ============================================================
-
-def screenshot_tide_table(
-    output_path,
-):
-    """
-    Open the live Tides4Fishing page in Chromium and save the
-    complete rendered monthly tide table as a PNG.
-
-    Complete table:
-
-        #tabla_mareas
-
-    Browser viewport:
-
-        1440 x 2560
-
-    Browser zoom:
-
-        100%
-    """
-
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        print(
-            "[screenshot] Playwright is not installed; "
-            "skipping table screenshot."
-        )
-        return False
-
-    os.makedirs(
-        os.path.dirname(output_path) or ".",
-        exist_ok=True,
-    )
-
-    try:
-
-        with sync_playwright() as p:
-
-            browser = p.chromium.launch(
-                headless=True,
-            )
-
-            page = browser.new_page(
-                viewport={
-                    "width": 1440,
-                    "height": 2560,
-                },
-                device_scale_factor=1,
-            )
-
-            print(
-                f"[screenshot] Opening {URL}"
-            )
-
-            page.goto(
-                URL,
-                wait_until="domcontentloaded",
-                timeout=60000,
-            )
-
-            table = page.locator(
-                "#tabla_mareas"
-            )
-
-            table.wait_for(
-                state="visible",
-                timeout=60000,
-            )
-
-            print(
-                "[screenshot] Found #tabla_mareas"
-            )
-
-            page.evaluate("""
-                document.body.style.zoom = "100%";
-            """)
-
-            page.wait_for_timeout(3000)
-
-            page.evaluate("""
-                const table =
-                    document.querySelector("#tabla_mareas");
-
-                if (table) {
-                    const rect =
-                        table.getBoundingClientRect();
-
-                    const absoluteTop =
-                        rect.top + window.scrollY;
-
-                    window.scrollTo({
-                        top: Math.max(
-                            0,
-                            absoluteTop - 100
-                        ),
-                        behavior: "instant"
-                    });
-                }
-            """)
-
-            page.wait_for_timeout(2000)
-
-            table.screenshot(
-                path=output_path,
-                animations="disabled",
-            )
-
-            browser.close()
-
-        print(
-            f"[screenshot] Saved {output_path}"
-        )
-
-        return True
-
-    except Exception:
-
-        print(
-            "[screenshot] ERROR:"
-        )
-
-        traceback.print_exc()
-
-        return False
-
-
-# ============================================================
-# DOWNLOAD PAGE
-# ============================================================
-
-def fetch_page(
-    sample_file=None,
-):
-    """
-    Download Tides4Fishing HTML.
-
-    --sample can be used to test with a saved HTML file.
-    """
-
-    if sample_file:
-
-        print(
-            f"[scrape] Using sample: "
-            f"{sample_file}"
-        )
-
-        with open(
-            sample_file,
-            encoding="utf-8",
-        ) as file:
-
-            return file.read()
-
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 "
-            "(Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 "
-            "(KHTML, like Gecko) "
-            "Chrome/154.0.0.0 "
-            "Safari/537.36"
-        ),
-        "Accept-Language": (
-            "en-US,en;q=0.9"
-        ),
-        "Accept": (
-            "text/html,"
-            "application/xhtml+xml,"
-            "application/xml;q=0.9,"
-            "*/*;q=0.8"
-        ),
-    }
-
-    try:
-
-        response = requests.get(
-            URL,
-            headers=headers,
-            timeout=30,
-        )
-
-        print(
-            f"[scrape] HTTP "
-            f"{response.status_code} "
-            f"({len(response.text)} bytes)"
-        )
-
-        response.raise_for_status()
-
-        return response.text
-
-    except Exception:
-
-        print(
-            "[scrape] ERROR:"
-        )
-
-        traceback.print_exc()
-
-        return None
-
-
-# ============================================================
-# ASTRONOMICAL FALLBACK
+# ASTRONOMICAL CALCULATION
 # ============================================================
 
 def compute_days(
@@ -950,7 +734,6 @@ def build_entry(
     coefficient,
     solunar,
     from_site,
-    image_url=None,
 ):
 
     date = day["date"]
@@ -967,91 +750,151 @@ def build_entry(
             f"{BULAN_INDO[date.month]}"
         )
 
-    major = (
-        f"Major: "
-        f"{_hm(day['transit'])} & "
-        f"{_hm(day['anti'])}"
-    )
-
     if from_site:
 
         solunar_text = solunar
 
         solunar_note = (
-            "data langsung dari "
-            "Tides4Fishing"
+            "Data aktivitas ikan langsung "
+            "dari Tides4Fishing."
         )
 
     else:
 
-        solunar_text = (
-            f"≈{solunar}"
-        )
+        solunar_text = f"≈{solunar}"
 
         solunar_note = (
-            "perkiraan lokal karena "
-            "data situs tidak terbaca"
+            "Aktivitas ikan adalah perkiraan "
+            "lokal karena data situs tidak terbaca."
         )
+
+    # --------------------------------------------------------
+    # Waktu utama
+    # --------------------------------------------------------
+
+    major_1 = _win(
+        day["transit"],
+        H1,
+    )
+
+    major_2 = _win(
+        day["anti"],
+        H1,
+    )
+
+    # --------------------------------------------------------
+    # Waktu tambahan
+    # --------------------------------------------------------
+
+    minor_1 = _win(
+        day["rise"],
+        M30,
+    )
+
+    minor_2 = _win(
+        day["set"],
+        M30,
+    )
+
+    # --------------------------------------------------------
+    # Tentukan waktu terbaik
+    #
+    # Untuk sekarang kita prioritaskan waktu Major.
+    # Jika Major tidak tersedia, gunakan Minor.
+    # --------------------------------------------------------
+
+    best_times = []
+
+    if day["transit"]:
+        best_times.append(
+            major_1
+        )
+
+    if day["anti"]:
+        best_times.append(
+            major_2
+        )
+
+    if not best_times:
+
+        if day["rise"]:
+            best_times.append(
+                minor_1
+            )
+
+        if day["set"]:
+            best_times.append(
+                minor_2
+            )
+
+    best_text = (
+        "<br>".join(
+            best_times
+        )
+        if best_times
+        else "-"
+    )
 
     title = (
         f"{label} | "
-        f"Koef {coefficient or '-'} · "
-        f"Aktivitas Ikan {solunar_text} | "
-        f"{major}"
+        f"🎣 Aktivitas Ikan: "
+        f"{solunar_text} | "
+        f"⭐ Waktu Terbaik: "
+        f"{best_times[0] if best_times else '-'}"
     )
 
-    image_html = ""
-
-    if image_url:
-
-        image_html = (
-            "<p>"
-            f"<img src=\"{image_url}\" "
-            "alt=\"Tabel pasang surut dan aktivitas ikan Palihan\" "
-            "style=\"max-width:100%;height:auto;\">"
-            "</p>"
-        )
-
     description = (
-        image_html
-        +
-        "<table border='1' "
-        "cellpadding='4' "
-        "cellspacing='0'>"
+        "<h3>🎣 Aktivitas Ikan</h3>"
 
-        "<tr>"
-        "<th>Koefisien pasang surut</th>"
-        "<th>Aktivitas Ikan</th>"
-        "</tr>"
+        f"<b>{solunar_text.upper()}</b>"
+        "<br>"
+        f"<i>{solunar_note}</i>"
 
-        "<tr>"
-        f"<td>{coefficient or '-'}</td>"
-        f"<td>{solunar_text}</td>"
-        "</tr>"
-
-        "</table>"
-
-        f"<br><i>{solunar_note}</i>"
         "<br><br>"
 
-        "<b>Waktu Utama (Major):</b>"
-        "<br>"
+        "<h3>⭐ Waktu Terbaik</h3>"
+        f"{best_text}"
 
-        f"• {_win(day['transit'], H1)}"
-        "<br>"
-
-        f"• {_win(day['anti'], H1)}"
         "<br><br>"
 
-        "<b>Waktu Tambahan (Minor):</b>"
+        "<h3>🌙 Waktu Utama (Major)</h3>"
+
+        f"{major_1}"
+        "<br>"
+        f"{major_2}"
+
+        "<br><br>"
+
+        "<h3>🌙 Waktu Tambahan (Minor)</h3>"
+
+        f"{minor_1} "
+        "(Bulan terbit)"
+
         "<br>"
 
-        f"• {_win(day['rise'], M30)} "
-        "(Terbit)"
-        "<br>"
+        f"{minor_2} "
+        "(Bulan terbenam)"
 
-        f"• {_win(day['set'], M30)} "
-        "(Terbenam)"
+        "<br><br>"
+
+        "<h3>☀️ Matahari</h3>"
+
+        f"Terbit: {_hm(day['sunrise'])}"
+        "<br>"
+        f"Terbenam: {_hm(day['sunset'])}"
+
+        "<br><br>"
+
+        "<h3>🌊 Koefisien Pasang Surut</h3>"
+
+        f"{coefficient or '-'}"
+
+        "<br><br>"
+
+        "<small>"
+        "Catatan: waktu di atas adalah waktu "
+        "aktivitas solunar, bukan waktu pasang/surut."
+        "</small>"
     )
 
     return title, description
@@ -1067,8 +910,6 @@ def write_feed(
     coefficients,
     site_solunar,
     now_time,
-    image_url=None,
-    image_path=None,
 ):
 
     from feedgen.feed import FeedGenerator
@@ -1076,7 +917,7 @@ def write_feed(
     feed = FeedGenerator()
 
     feed.title(
-        "Aktivitas Ikan Palihan"
+        "🎣 Waktu Mancing Palihan"
     )
 
     feed.link(
@@ -1085,9 +926,10 @@ def write_feed(
     )
 
     feed.description(
-        "Prediksi aktivitas ikan "
-        "Palihan: koefisien pasang surut "
-        "+ aktivitas ikan"
+        "Informasi waktu terbaik untuk "
+        "mancing di Palihan: aktivitas ikan, "
+        "waktu solunar, matahari, bulan, "
+        "dan koefisien pasang surut."
     )
 
     feed.language("id")
@@ -1119,7 +961,6 @@ def write_feed(
                 coefficients.get(date),
                 solunar,
                 from_site,
-                image_url=image_url,
             )
         )
 
@@ -1140,43 +981,6 @@ def write_feed(
         entry.description(
             description
         )
-
-        # ----------------------------------------------------
-        # ADD IMAGE AS RSS ENCLOSURE
-        #
-        # This is the important new part.
-        #
-        # Many RSS readers/widgets do not render an <img>
-        # inside <description>, but they can detect an RSS
-        # enclosure.
-        # ----------------------------------------------------
-
-        if image_url and image_path:
-
-            try:
-
-                image_size = os.path.getsize(
-                    image_path
-                )
-
-                entry.enclosure(
-                    url=image_url,
-                    length=image_size,
-                    type="image/png",
-                )
-
-                print(
-                    f"[feed] Image enclosure added: "
-                    f"{image_url} "
-                    f"({image_size} bytes)"
-                )
-
-            except OSError as exc:
-
-                print(
-                    "[feed] WARNING: "
-                    f"Could not read image file: {exc}"
-                )
 
         entry.pubDate(
             now_time
@@ -1305,55 +1109,6 @@ def main():
     )
 
     # --------------------------------------------------------
-    # Screenshot the rendered monthly tide table
-    # --------------------------------------------------------
-
-    image_url = None
-    image_path = None
-
-    if IMAGE_BASE_URL:
-
-        os.makedirs(
-            IMAGE_DIR,
-            exist_ok=True,
-        )
-
-        image_filename = (
-            f"palihan-{today.year:04d}-"
-            f"{today.month:02d}.png"
-        )
-
-        image_path = os.path.join(
-            IMAGE_DIR,
-            image_filename,
-        )
-
-        if screenshot_tide_table(
-            image_path
-        ):
-
-            image_url = (
-                f"{IMAGE_BASE_URL}/"
-                f"{image_filename}"
-            )
-
-            print(
-                f"[screenshot] Public image URL: "
-                f"{image_url}"
-            )
-
-        else:
-
-            image_path = None
-
-    else:
-
-        print(
-            "[screenshot] IMAGE_BASE_URL is not set; "
-            "RSS will contain text only."
-        )
-
-    # --------------------------------------------------------
     # Generate RSS
     # --------------------------------------------------------
 
@@ -1363,8 +1118,6 @@ def main():
         coefficients,
         site_solunar,
         now_time,
-        image_url=image_url,
-        image_path=image_path,
     )
 
 
