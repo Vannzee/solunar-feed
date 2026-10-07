@@ -1,195 +1,502 @@
+"""
+Solunar RSS feed for Palihan, Yogyakarta.
+
+Source:
+https://tides4fishing.com/id/yogyakarta/palihan
+
+Solunar activity is read directly from the fish icons:
+
+    0 active fish -> rendah
+    1 active fish -> sedang
+    2 active fish -> tinggi
+    3 active fish -> sangat tinggi
+"""
+
 import argparse
 import datetime
-import os
 import re
 import traceback
+import os
 from collections import Counter
 from zoneinfo import ZoneInfo
 
 import requests
 from bs4 import BeautifulSoup
-from feedgen.feed import FeedGenerator
 
+
+# ============================================================
+# CONFIGURATION
+# ============================================================
 
 URL = "https://tides4fishing.com/id/yogyakarta/palihan"
 
-TIMEZONE = "Asia/Jakarta"
+# Public URL where GitHub Pages serves the generated images.
+# Set this in GitHub Actions. Example:
+#   https://vannzee.github.io/solunar-feed/images
+IMAGE_BASE_URL = os.environ.get(
+    "IMAGE_BASE_URL",
+    "",
+).rstrip("/")
 
 IMAGE_DIR = "images"
 
-IMAGE_BASE_URL = os.environ.get("IMAGE_BASE_URL", "").rstrip("/")
+TZ = ZoneInfo("Asia/Jakarta")
+UTC = datetime.timezone.utc
+
+H1 = datetime.timedelta(hours=1)
+M30 = datetime.timedelta(minutes=30)
+
+HARI_INDO = [
+    "Sen",
+    "Sel",
+    "Rab",
+    "Kam",
+    "Jum",
+    "Sab",
+    "Min",
+]
+
+BULAN_INDO = [
+    "",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agt",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+]
+
+MONTHS_EN = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+]
+
+# Correct fish mapping.
+LEVELS_ID = [
+    "rendah",
+    "sedang",
+    "tinggi",
+    "sangat tinggi",
+]
 
 
 # ============================================================
-# GET TIDES4FISHING PAGE
+# STATUS / TEXT MAPPING
 # ============================================================
 
-def get_page():
-    headers = {
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/154.0.0.0 Safari/537.36"
+STATUS_MAP = {
+    "very high": "sangat tinggi",
+    "very high activity": "sangat tinggi",
+
+    "high": "tinggi",
+    "high activity": "tinggi",
+
+    "average": "sedang",
+    "average activity": "sedang",
+
+    "low": "rendah",
+    "low activity": "rendah",
+
+    # Indonesian
+    "sangat tinggi": "sangat tinggi",
+    "tinggi": "tinggi",
+    "sedang": "sedang",
+    "rendah": "rendah",
+}
+
+
+LEVEL_PATTERN = (
+    r"very high activity|"
+    r"very high|"
+    r"high activity|"
+    r"average activity|"
+    r"low activity|"
+    r"sangat tinggi|"
+    r"tinggi|"
+    r"sedang|"
+    r"rendah|"
+    r"high|"
+    r"average|"
+    r"low"
+)
+
+LEVEL_ONLY = re.compile(
+    r"\b(" + LEVEL_PATTERN + r")\b",
+    re.I,
+)
+
+
+# ============================================================
+# TABLE REGEX
+# ============================================================
+
+DAYROW = re.compile(
+    r"^(\d{1,2})\s+"
+    r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b",
+    re.I,
+)
+
+COEF_CELL = re.compile(
+    r"^\d{1,3}\s+(?:"
+    + LEVEL_PATTERN
+    + r")$",
+    re.I,
+)
+
+
+# ============================================================
+# GENERAL HTML HELPERS
+# ============================================================
+
+def flatten(html: str) -> str:
+    """
+    Convert HTML into normalized text.
+    """
+
+    if "</" in html:
+        soup = BeautifulSoup(
+            html,
+            "html.parser",
         )
-    }
 
-    response = requests.get(
-        URL,
-        headers=headers,
-        timeout=60,
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+
+        html = soup.get_text(" ")
+
+    return re.sub(
+        r"\s+",
+        " ",
+        html,
+    ).strip()
+
+
+# ============================================================
+# MONTH / YEAR
+# ============================================================
+
+def month_year_of_table(
+    text: str,
+    today: datetime.date,
+):
+    """
+    Determine the month/year of the monthly tide table.
+    """
+
+    start = text.lower().find(
+        "tide table"
     )
 
-    response.raise_for_status()
+    scope = (
+        text[start:start + 6000]
+        if start != -1
+        else text[:6000]
+    )
 
-    return response.text
+    hits = re.findall(
+        r"\b("
+        + "|".join(MONTHS_EN)
+        + r")\s*,?\s*(20\d\d)\b",
+        scope,
+        re.I,
+    )
+
+    if not hits:
+        return today.year, today.month
+
+    counts = Counter(
+        (
+            month.capitalize(),
+            year,
+        )
+        for month, year in hits
+    )
+
+    (month, year), _ = counts.most_common(1)[0]
+
+    return (
+        int(year),
+        MONTHS_EN.index(month) + 1,
+    )
 
 
 # ============================================================
-# PARSE FISH ACTIVITY
+# COEFFICIENT PARSER
 # ============================================================
 
-def get_fish_activity(cell):
+def parse_coefficients(
+    html: str,
+    today: datetime.date,
+):
     """
-    Count fish icons.
+    Extract tide coefficient from the monthly table.
+    """
+
+    text = flatten(html)
+
+    year, month = month_year_of_table(
+        text,
+        today,
+    )
+
+    out = {}
+
+    soup = BeautifulSoup(
+        html,
+        "html.parser",
+    )
+
+    for tr in soup.find_all("tr"):
+
+        row_text = " ".join(
+            tr.get_text(" ").split()
+        )
+
+        day_match = DAYROW.match(
+            row_text
+        )
+
+        if not day_match:
+            continue
+
+        day_number = int(
+            day_match.group(1)
+        )
+
+        cells = tr.find_all(
+            ["td", "th"]
+        )
+
+        for cell in cells:
+
+            cell_text = " ".join(
+                cell.get_text(" ").split()
+            )
+
+            match = re.match(
+                r"^(\d{1,3})\s+(.+)$",
+                cell_text,
+                re.I,
+            )
+
+            if not match:
+                continue
+
+            coefficient = match.group(1)
+            status_raw = match.group(2).lower()
+
+            if not LEVEL_ONLY.search(
+                status_raw
+            ):
+                continue
+
+            status_match = LEVEL_ONLY.search(
+                status_raw
+            )
+
+            status = STATUS_MAP.get(
+                status_match.group(1).lower(),
+                status_match.group(1).lower(),
+            )
+
+            try:
+                date = datetime.date(
+                    year,
+                    month,
+                    day_number,
+                )
+
+            except ValueError:
+                continue
+
+            out.setdefault(
+                date,
+                f"{coefficient} ({status})",
+            )
+
+            break
+
+    return out
+
+
+# ============================================================
+# SOLUNAR FISH PARSER
+# ============================================================
+
+def parse_fish_activity(cell):
+    """
+    Parse Tides4Fishing's fish icons.
 
     Active:
         icon-ic_pez_leyenda
 
-    Inactive / grey:
-        icon-ic_pez_leyenda2
+    Grey/inactive:
+        icon-ic_pez_leyenda2 noprint
+
+    Mapping:
+
+        0 fish -> rendah
+        1 fish -> sedang
+        2 fish -> tinggi
+        3 fish -> sangat tinggi
     """
 
-    active = len(
-        cell.select(
-            "span.icon-ic_pez_leyenda"
+    active_fish = len(
+        cell.find_all(
+            "span",
+            class_="icon-ic_pez_leyenda",
         )
     )
 
-    inactive = len(
-        cell.select(
-            "span.icon-ic_pez_leyenda2"
-        )
-    )
-
-    # Remove inactive icons from the count.
-    # The actual activity level is based on active fish icons.
-    count = active
-
-    if count >= 3:
+    if active_fish >= 3:
         return "sangat tinggi"
 
-    if count == 2:
+    if active_fish == 2:
         return "tinggi"
 
-    if count == 1:
+    if active_fish == 1:
         return "sedang"
 
     return "rendah"
 
 
-# ============================================================
-# PARSE TIDE TABLE
-# ============================================================
+def parse_solunar(
+    html: str,
+    today: datetime.date,
+):
+    """
+    Extract SOLUNAR ACTIVITY directly from the fish icons.
+    """
 
-def parse_tides(html):
-    soup = BeautifulSoup(html, "html.parser")
+    out = {}
+    sample = None
 
-    table = soup.select_one("#tabla_mareas")
+    if "</" not in html:
+        return out, sample
 
-    if not table:
-        raise RuntimeError(
-            "Table #tabla_mareas tidak ditemukan."
+    text = flatten(html)
+
+    year, month = month_year_of_table(
+        text,
+        today,
+    )
+
+    soup = BeautifulSoup(
+        html,
+        "html.parser",
+    )
+
+    for tr in soup.find_all("tr"):
+
+        row_text = " ".join(
+            tr.get_text(" ").split()
         )
 
-    rows = []
-
-    current_date = None
-
-    for tr in table.select("tr"):
-
-        text = " ".join(
-            tr.stripped_strings
+        day_match = DAYROW.match(
+            row_text
         )
 
-        if not text:
+        if not day_match:
             continue
 
-        # ----------------------------------------------------
-        # DATE
-        # ----------------------------------------------------
-
-        date_match = re.search(
-            r"(\d{1,2})[/-](\d{1,2})",
-            text
+        day_number = int(
+            day_match.group(1)
         )
 
-        if date_match:
-            day = int(date_match.group(1))
-            month = int(date_match.group(2))
-
-            current_date = (
-                day,
-                month
-            )
-
-        # ----------------------------------------------------
-        # TIME
-        # ----------------------------------------------------
-
-        time_match = re.search(
-            r"\b(\d{1,2}):(\d{2})\b",
-            text
+        # Find activity cell by exact class.
+        # The cell has rowspan="2".
+        activity_cells = tr.find_all(
+            "td",
+            class_="tabla_mareas_actividad",
         )
 
-        if not time_match:
+        if not activity_cells:
             continue
 
-        time_value = (
-            f"{int(time_match.group(1)):02d}:"
-            f"{time_match.group(2)}"
+        cell = activity_cells[0]
+
+        if sample is None:
+            sample = str(tr)[:5000]
+
+        # Count active fish.
+        active_fish = len(
+            cell.find_all(
+                "span",
+                class_="icon-ic_pez_leyenda",
+            )
         )
 
-        # ----------------------------------------------------
-        # HEIGHT
-        # ----------------------------------------------------
-
-        height_match = re.search(
-            r"(\d+(?:[.,]\d+)?)\s*m\b",
-            text,
-            re.IGNORECASE
+        # Convert fish count to Indonesian level.
+        level = parse_fish_activity(
+            cell
         )
 
-        height = None
+        try:
 
-        if height_match:
-            height = height_match.group(1).replace(
-                ",",
-                "."
+            date = datetime.date(
+                year,
+                month,
+                day_number,
             )
 
-        # ----------------------------------------------------
-        # FISH ACTIVITY
-        # ----------------------------------------------------
+        except ValueError:
+            continue
 
-        fish_activity = get_fish_activity(tr)
-
-        rows.append(
-            {
-                "date": current_date,
-                "time": time_value,
-                "height": height,
-                "fish_activity": fish_activity,
-            }
+        out.setdefault(
+            date,
+            level,
         )
 
-    return rows
+        print(
+            f"[solunar] "
+            f"{date.isoformat()} -> "
+            f"{active_fish} fish -> "
+            f"{level}"
+        )
+
+    return out, sample
 
 
 # ============================================================
 # SCREENSHOT TIDE TABLE
 # ============================================================
 
-def screenshot_tide_table(output_path):
+def screenshot_tide_table(
+    output_path,
+):
+    """
+    Open the live Tides4Fishing page in Chromium and save the
+    complete rendered monthly tide table as a PNG.
+
+    Complete table:
+
+        #tabla_mareas
+
+    Browser viewport:
+
+        1440 x 2560
+
+    Browser zoom:
+
+        100%
+    """
+
     try:
         from playwright.sync_api import sync_playwright
     except ImportError:
@@ -201,14 +508,15 @@ def screenshot_tide_table(output_path):
 
     os.makedirs(
         os.path.dirname(output_path) or ".",
-        exist_ok=True
+        exist_ok=True,
     )
 
     try:
+
         with sync_playwright() as p:
 
             browser = p.chromium.launch(
-                headless=True
+                headless=True,
             )
 
             page = browser.new_page(
@@ -242,16 +550,13 @@ def screenshot_tide_table(output_path):
                 "[screenshot] Found #tabla_mareas"
             )
 
-            page.evaluate(
-                """
+            page.evaluate("""
                 document.body.style.zoom = "100%";
-                """
-            )
+            """)
 
             page.wait_for_timeout(3000)
 
-            page.evaluate(
-                """
+            page.evaluate("""
                 const table =
                     document.querySelector("#tabla_mareas");
 
@@ -270,8 +575,7 @@ def screenshot_tide_table(output_path):
                         behavior: "instant"
                     });
                 }
-                """
-            )
+            """)
 
             page.wait_for_timeout(2000)
 
@@ -289,6 +593,7 @@ def screenshot_tide_table(output_path):
         return True
 
     except Exception:
+
         print(
             "[screenshot] ERROR:"
         )
@@ -299,49 +604,401 @@ def screenshot_tide_table(output_path):
 
 
 # ============================================================
-# BUILD RSS ENTRY
+# DOWNLOAD PAGE
+# ============================================================
+
+def fetch_page(
+    sample_file=None,
+):
+    """
+    Download Tides4Fishing HTML.
+
+    --sample can be used to test with a saved HTML file.
+    """
+
+    if sample_file:
+
+        print(
+            f"[scrape] Using sample: "
+            f"{sample_file}"
+        )
+
+        with open(
+            sample_file,
+            encoding="utf-8",
+        ) as file:
+
+            return file.read()
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 "
+            "(Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 "
+            "(KHTML, like Gecko) "
+            "Chrome/154.0.0.0 "
+            "Safari/537.36"
+        ),
+        "Accept-Language": (
+            "en-US,en;q=0.9"
+        ),
+        "Accept": (
+            "text/html,"
+            "application/xhtml+xml,"
+            "application/xml;q=0.9,"
+            "*/*;q=0.8"
+        ),
+    }
+
+    try:
+
+        response = requests.get(
+            URL,
+            headers=headers,
+            timeout=30,
+        )
+
+        print(
+            f"[scrape] HTTP "
+            f"{response.status_code} "
+            f"({len(response.text)} bytes)"
+        )
+
+        response.raise_for_status()
+
+        return response.text
+
+    except Exception:
+
+        print(
+            "[scrape] ERROR:"
+        )
+
+        traceback.print_exc()
+
+        return None
+
+
+# ============================================================
+# ASTRONOMICAL FALLBACK
+# ============================================================
+
+def compute_days(
+    today: datetime.date,
+    n: int = 14,
+):
+    """
+    Calculate moon/sun events.
+    """
+
+    import ephem
+
+    observer = ephem.Observer()
+
+    observer.lat = "-7.91"
+    observer.lon = "110.07"
+    observer.elevation = 5
+
+    days = []
+
+    for i in range(n):
+
+        date = (
+            today
+            + datetime.timedelta(
+                days=i
+            )
+        )
+
+        start = datetime.datetime.combine(
+            date,
+            datetime.time(0),
+            tzinfo=TZ,
+        )
+
+        end = (
+            start
+            + datetime.timedelta(days=1)
+        )
+
+        observer.date = (
+            start
+            .astimezone(UTC)
+            .replace(tzinfo=None)
+        )
+
+        moon = ephem.Moon()
+        sun = ephem.Sun()
+
+        def event(
+            function,
+            body,
+        ):
+
+            try:
+
+                event_time = function(
+                    body
+                )
+
+            except (
+                ephem.NeverUpError,
+                ephem.AlwaysUpError,
+            ):
+
+                return None
+
+            dt = (
+                ephem.Date(
+                    event_time
+                )
+                .datetime()
+                .replace(
+                    tzinfo=UTC
+                )
+                .astimezone(TZ)
+            )
+
+            if start <= dt < end:
+                return dt
+
+            return None
+
+        transit = event(
+            observer.next_transit,
+            moon,
+        )
+
+        anti = event(
+            observer.next_antitransit,
+            moon,
+        )
+
+        rise = event(
+            observer.next_rising,
+            moon,
+        )
+
+        moon_set = event(
+            observer.next_setting,
+            moon,
+        )
+
+        sunrise = event(
+            observer.next_rising,
+            sun,
+        )
+
+        sunset = event(
+            observer.next_setting,
+            sun,
+        )
+
+        observer.date = (
+            start
+            .astimezone(UTC)
+            .replace(tzinfo=None)
+        )
+
+        try:
+
+            phase_dates = [
+                ephem.previous_new_moon(
+                    observer.date
+                ),
+                ephem.next_new_moon(
+                    observer.date
+                ),
+                ephem.previous_full_moon(
+                    observer.date
+                ),
+                ephem.next_full_moon(
+                    observer.date
+                ),
+            ]
+
+            reference = float(
+                observer.date
+            )
+
+            distance = min(
+                abs(
+                    reference
+                    - float(p)
+                )
+                for p in phase_dates
+            )
+
+        except Exception:
+
+            distance = 10
+
+        days.append(
+            {
+                "date": date,
+                "dist": distance,
+                "transit": transit,
+                "anti": anti,
+                "rise": rise,
+                "set": moon_set,
+                "sunrise": sunrise,
+                "sunset": sunset,
+            }
+        )
+
+    return days
+
+
+# ============================================================
+# FALLBACK SOLUNAR ESTIMATE
+# ============================================================
+
+def estimate_solunar(day):
+    """
+    Astronomical fallback only.
+    """
+
+    distance = day["dist"]
+
+    if distance <= 2:
+        base = 2
+
+    elif distance <= 5.5:
+        base = 1
+
+    else:
+        base = 0
+
+    periods = [
+        (t - H1, t + H1)
+        for t in (
+            day["transit"],
+            day["anti"],
+        )
+        if t
+    ]
+
+    periods += [
+        (t - M30, t + M30)
+        for t in (
+            day["rise"],
+            day["set"],
+        )
+        if t
+    ]
+
+    sun_periods = [
+        (t - M30, t + M30)
+        for t in (
+            day["sunrise"],
+            day["sunset"],
+        )
+        if t
+    ]
+
+    bonus = any(
+        a0 < b1 and b0 < a1
+        for a0, a1 in periods
+        for b0, b1 in sun_periods
+    )
+
+    return min(
+        3,
+        base + (
+            1
+            if bonus
+            else 0
+        ),
+    )
+
+
+# ============================================================
+# TIME FORMATTING
+# ============================================================
+
+def _hm(t):
+
+    if not t:
+        return "-"
+
+    return t.strftime(
+        "%H:%M"
+    )
+
+
+def _win(
+    t,
+    delta,
+):
+
+    if not t:
+        return "-"
+
+    return (
+        f"{_hm(t - delta)} - "
+        f"{_hm(t + delta)}"
+    )
+
+
+# ============================================================
+# RSS ENTRY
 # ============================================================
 
 def build_entry(
-    fg,
+    i,
     day,
-    coefficients,
-    site_solunar,
-    now_time,
+    coefficient,
+    solunar,
+    from_site,
     image_url=None,
-    image_path=None,
 ):
 
-    entry = fg.add_entry()
+    date = day["date"]
 
-    date_value = day.get(
-        "date",
-        now_time.date()
+    if i == 0:
+
+        label = "Hari ini"
+
+    else:
+
+        label = (
+            f"{HARI_INDO[date.weekday()]}, "
+            f"{date.day:02d} "
+            f"{BULAN_INDO[date.month]}"
+        )
+
+    major = (
+        f"Major: "
+        f"{_hm(day['transit'])} & "
+        f"{_hm(day['anti'])}"
     )
+
+    if from_site:
+
+        solunar_text = solunar
+
+        solunar_note = (
+            "data langsung dari "
+            "Tides4Fishing"
+        )
+
+    else:
+
+        solunar_text = (
+            f"≈{solunar}"
+        )
+
+        solunar_note = (
+            "perkiraan lokal karena "
+            "data situs tidak terbaca"
+        )
 
     title = (
-        f"Palihan - "
-        f"{date_value.strftime('%d-%m-%Y')}"
+        f"{label} | "
+        f"Koef {coefficient or '-'} · "
+        f"Aktivitas Ikan {solunar_text} | "
+        f"{major}"
     )
-
-    entry.title(title)
-
-    entry.id(
-        f"{URL}#{date_value.isoformat()}"
-    )
-
-    entry.link(
-        href=URL,
-        rel="alternate"
-    )
-
-    entry.published(
-        now_time
-    )
-
-    # --------------------------------------------------------
-    # IMAGE HTML
-    # --------------------------------------------------------
 
     image_html = ""
 
@@ -355,123 +1012,57 @@ def build_entry(
             "</p>"
         )
 
-    # --------------------------------------------------------
-    # RSS ENCLOSURE
-    # --------------------------------------------------------
-
-    if image_url and image_path:
-
-        try:
-
-            image_size = os.path.getsize(
-                image_path
-            )
-
-            entry.enclosure(
-                url=image_url,
-                length=image_size,
-                type="image/png",
-            )
-
-            print(
-                "[rss] Added image enclosure:"
-                f" {image_url}"
-            )
-
-            print(
-                "[rss] Image size:"
-                f" {image_size} bytes"
-            )
-
-        except OSError as exc:
-
-            print(
-                "[rss] WARNING: "
-                f"Could not read image size: {exc}"
-            )
-
-    # --------------------------------------------------------
-    # TIDE TABLE
-    # --------------------------------------------------------
-
-    table_html = (
-        "<table border='1' "
-        "cellpadding='4' "
-        "cellspacing='0'>"
-        "<tr>"
-        "<th>Jam</th>"
-        "<th>Tinggi</th>"
-        "<th>Aktivitas ikan</th>"
-        "</tr>"
-    )
-
-    for item in day.get("tides", []):
-
-        time_value = item.get(
-            "time",
-            "-"
-        )
-
-        height = item.get(
-            "height",
-            "-"
-        )
-
-        fish_activity = item.get(
-            "fish_activity",
-            "rendah"
-        )
-
-        table_html += (
-            "<tr>"
-            f"<td>{time_value}</td>"
-            f"<td>{height}</td>"
-            f"<td>{fish_activity}</td>"
-            "</tr>"
-        )
-
-    table_html += "</table>"
-
-    # --------------------------------------------------------
-    # SOLUNAR INFORMATION
-    # --------------------------------------------------------
-
-    solunar_html = ""
-
-    if site_solunar:
-
-        solunar_html = (
-            "<p>"
-            "<b>Aktivitas ikan:</b> "
-            f"{site_solunar}"
-            "</p>"
-        )
-
-    # --------------------------------------------------------
-    # DESCRIPTION
-    # --------------------------------------------------------
-
     description = (
         image_html
         +
-        solunar_html
-        +
-        table_html
+        "<table border='1' "
+        "cellpadding='4' "
+        "cellspacing='0'>"
+
+        "<tr>"
+        "<th>Koefisien pasang surut</th>"
+        "<th>Aktivitas Ikan</th>"
+        "</tr>"
+
+        "<tr>"
+        f"<td>{coefficient or '-'}</td>"
+        f"<td>{solunar_text}</td>"
+        "</tr>"
+
+        "</table>"
+
+        f"<br><i>{solunar_note}</i>"
+        "<br><br>"
+
+        "<b>Waktu Utama (Major):</b>"
+        "<br>"
+
+        f"• {_win(day['transit'], H1)}"
+        "<br>"
+
+        f"• {_win(day['anti'], H1)}"
+        "<br><br>"
+
+        "<b>Waktu Tambahan (Minor):</b>"
+        "<br>"
+
+        f"• {_win(day['rise'], M30)} "
+        "(Terbit)"
+        "<br>"
+
+        f"• {_win(day['set'], M30)} "
+        "(Terbenam)"
     )
 
-    entry.description(
-        description
-    )
-
-    return entry
+    return title, description
 
 
 # ============================================================
-# WRITE RSS FEED
+# WRITE RSS
 # ============================================================
 
 def write_feed(
-    output_path,
+    path,
     days,
     coefficients,
     site_solunar,
@@ -480,70 +1071,127 @@ def write_feed(
     image_path=None,
 ):
 
-    fg = FeedGenerator()
+    from feedgen.feed import FeedGenerator
 
-    fg.id(
-        f"{URL}/rss"
+    feed = FeedGenerator()
+
+    feed.title(
+        "Aktivitas Ikan Palihan"
     )
 
-    fg.title(
-        "Palihan - Pasang Surut & Aktivitas Ikan"
-    )
-
-    fg.author(
-        {
-            "name": "Vannzee"
-        }
-    )
-
-    fg.link(
+    feed.link(
         href=URL,
-        rel="alternate"
+        rel="alternate",
     )
 
-    fg.link(
-        href="https://vannzee.github.io/solunar-feed/palihan.xml",
-        rel="self"
+    feed.description(
+        "Prediksi aktivitas ikan "
+        "Palihan: koefisien pasang surut "
+        "+ aktivitas ikan"
     )
 
-    fg.description(
-        "Informasi pasang surut dan aktivitas ikan "
-        "Palihan, Yogyakarta."
-    )
+    feed.language("id")
 
-    fg.language("id")
+    for i, day in enumerate(days):
 
-    fg.lastBuildDate(
-        now_time
-    )
+        date = day["date"]
 
-    # --------------------------------------------------------
-    # ADD ENTRIES
-    # --------------------------------------------------------
-
-    for day in days:
-
-        build_entry(
-            fg=fg,
-            day=day,
-            coefficients=coefficients,
-            site_solunar=site_solunar,
-            now_time=now_time,
-            image_url=image_url,
-            image_path=image_path,
+        from_site = (
+            date in site_solunar
         )
 
-    # --------------------------------------------------------
-    # WRITE RSS
-    # --------------------------------------------------------
+        if from_site:
 
-    fg.rss_file(
-        output_path,
+            solunar = site_solunar[
+                date
+            ]
+
+        else:
+
+            solunar = LEVELS_ID[
+                estimate_solunar(day)
+            ]
+
+        title, description = (
+            build_entry(
+                i,
+                day,
+                coefficients.get(date),
+                solunar,
+                from_site,
+                image_url=image_url,
+            )
+        )
+
+        entry = feed.add_entry()
+
+        entry.id(
+            f"palihan-{date.isoformat()}"
+        )
+
+        entry.title(
+            title
+        )
+
+        entry.link(
+            href=URL
+        )
+
+        entry.description(
+            description
+        )
+
+        # ----------------------------------------------------
+        # ADD IMAGE AS RSS ENCLOSURE
+        #
+        # This is the important new part.
+        #
+        # Many RSS readers/widgets do not render an <img>
+        # inside <description>, but they can detect an RSS
+        # enclosure.
+        # ----------------------------------------------------
+
+        if image_url and image_path:
+
+            try:
+
+                image_size = os.path.getsize(
+                    image_path
+                )
+
+                entry.enclosure(
+                    url=image_url,
+                    length=image_size,
+                    type="image/png",
+                )
+
+                print(
+                    f"[feed] Image enclosure added: "
+                    f"{image_url} "
+                    f"({image_size} bytes)"
+                )
+
+            except OSError as exc:
+
+                print(
+                    "[feed] WARNING: "
+                    f"Could not read image file: {exc}"
+                )
+
+        entry.pubDate(
+            now_time
+            - datetime.timedelta(
+                hours=i
+            )
+        )
+
+    feed.rss_file(
+        path,
         pretty=True,
     )
 
     print(
-        f"[rss] Saved {output_path}"
+        f"[feed] {path} ditulis"
     )
 
 
@@ -556,110 +1204,108 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--debug",
-        action="store_true",
+        "--sample",
+        help=(
+            "Use local HTML instead "
+            "of downloading the website."
+        ),
     )
 
     args = parser.parse_args()
 
     now_time = datetime.datetime.now(
-        ZoneInfo(TIMEZONE)
+        TZ
     )
+
+    today = now_time.date()
 
     print(
-        f"Current time: {now_time}"
+        f"[main] Today: "
+        f"{today.isoformat()}"
     )
 
     # --------------------------------------------------------
-    # DOWNLOAD PAGE
+    # Download HTML
     # --------------------------------------------------------
 
-    print(
-        f"[page] Downloading {URL}"
+    raw = fetch_page(
+        args.sample
     )
 
-    html = get_page()
+    coefficients = {}
+    site_solunar = {}
 
-    print(
-        f"[page] Downloaded {len(html)} bytes"
-    )
+    if raw:
 
-    # --------------------------------------------------------
-    # PARSE TIDES
-    # --------------------------------------------------------
+        # ----------------------------------------------------
+        # Parse coefficient
+        # ----------------------------------------------------
 
-    try:
-
-        parsed_rows = parse_tides(
-            html
+        coefficients = (
+            parse_coefficients(
+                raw,
+                today,
+            )
         )
 
         print(
-            f"[parse] Parsed {len(parsed_rows)} rows"
+            f"[scrape] "
+            f"Coefficient days: "
+            f"{len(coefficients)}"
         )
 
-    except Exception:
+        # ----------------------------------------------------
+        # Parse actual fish activity
+        # ----------------------------------------------------
+
+        site_solunar, sample = (
+            parse_solunar(
+                raw,
+                today,
+            )
+        )
 
         print(
-            "[parse] ERROR:"
+            f"[scrape] "
+            f"Aktivitas ikan days from site: "
+            f"{len(site_solunar)}"
         )
 
-        traceback.print_exc()
+        if not site_solunar:
 
-        parsed_rows = []
+            print(
+                "[scrape] WARNING: "
+                "No solunar activity was found."
+            )
 
-    # --------------------------------------------------------
-    # GROUP BY DATE
-    # --------------------------------------------------------
+            if sample:
 
-    days = []
+                print(
+                    "[scrape] Sample row:"
+                )
 
-    grouped = {}
+                print(
+                    sample
+                )
 
-    for row in parsed_rows:
+    else:
 
-        date_key = row.get(
-            "date"
-        )
-
-        if not date_key:
-            continue
-
-        grouped.setdefault(
-            date_key,
-            []
-        ).append(row)
-
-    for date_key, tides in sorted(
-        grouped.items()
-    ):
-
-        days.append(
-            {
-                "date": datetime.date(
-                    now_time.year,
-                    date_key[1],
-                    date_key[0],
-                ),
-                "tides": tides,
-            }
+        print(
+            "[scrape] WARNING: "
+            "Could not download website."
         )
 
     # --------------------------------------------------------
-    # FALLBACK IF NOTHING PARSED
+    # Calculate astronomical events
     # --------------------------------------------------------
 
-    if not days:
-
-        days = [
-            {
-                "date": now_time.date(),
-                "tides": [],
-            }
-        ]
+    days = compute_days(
+        today,
+        14,
+    )
 
     # --------------------------------------------------------
-    # IMAGE
+    # Screenshot the rendered monthly tide table
     # --------------------------------------------------------
 
     image_url = None
@@ -669,18 +1315,17 @@ def main():
 
         os.makedirs(
             IMAGE_DIR,
-            exist_ok=True
+            exist_ok=True,
         )
 
         image_filename = (
-            f"palihan-"
-            f"{now_time.year:04d}-"
-            f"{now_time.month:02d}.png"
+            f"palihan-{today.year:04d}-"
+            f"{today.month:02d}.png"
         )
 
         image_path = os.path.join(
             IMAGE_DIR,
-            image_filename
+            image_filename,
         )
 
         if screenshot_tide_table(
@@ -693,40 +1338,39 @@ def main():
             )
 
             print(
-                f"[image] URL: {image_url}"
+                f"[screenshot] Public image URL: "
+                f"{image_url}"
             )
 
         else:
 
             image_path = None
 
-    # --------------------------------------------------------
-    # SOLUNAR
-    # --------------------------------------------------------
+    else:
 
-    site_solunar = None
-
-    # Keep this compatible with the existing feed.
-    # If your existing parser provides a solunar value,
-    # it can still be passed here.
-    #
-    # The fish activity in the table itself is generated
-    # from the Tides4Fishing fish icons.
+        print(
+            "[screenshot] IMAGE_BASE_URL is not set; "
+            "RSS will contain text only."
+        )
 
     # --------------------------------------------------------
-    # WRITE RSS
+    # Generate RSS
     # --------------------------------------------------------
 
     write_feed(
         "palihan.xml",
         days,
-        {},
+        coefficients,
         site_solunar,
         now_time,
         image_url=image_url,
         image_path=image_path,
     )
 
+
+# ============================================================
+# RUN
+# ============================================================
 
 if __name__ == "__main__":
     main()
