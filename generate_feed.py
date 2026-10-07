@@ -16,6 +16,7 @@ import argparse
 import datetime
 import re
 import traceback
+import os
 from collections import Counter
 from zoneinfo import ZoneInfo
 
@@ -28,6 +29,16 @@ from bs4 import BeautifulSoup
 # ============================================================
 
 URL = "https://tides4fishing.com/id/yogyakarta/palihan"
+
+# Public URL where GitHub Pages serves the generated images.
+# Set this in GitHub Actions. Example:
+#   https://vannzee.github.io/solunar-feed/images
+IMAGE_BASE_URL = os.environ.get(
+    "IMAGE_BASE_URL",
+    "",
+).rstrip("/")
+
+IMAGE_DIR = "images"
 
 TZ = ZoneInfo("Asia/Jakarta")
 UTC = datetime.timezone.utc
@@ -498,6 +509,107 @@ def parse_solunar(
 
 
 # ============================================================
+# SCREENSHOT TIDE TABLE
+# ============================================================
+
+def screenshot_tide_table(
+    output_path,
+):
+    """
+    Open the live Tides4Fishing page in Chromium and save the
+    rendered tide table as a PNG.
+
+    We locate the table through the real fish-activity cell:
+        td.tabla_mareas_actividad
+
+    This avoids depending on a fragile table index and preserves
+    the site's rendered fish icons, moon graphics and formatting.
+    """
+
+    try:
+        from playwright.sync_api import sync_playwright
+    except ImportError:
+        print(
+            "[screenshot] Playwright is not installed; "
+            "skipping table screenshot."
+        )
+        return False
+
+    os.makedirs(
+        os.path.dirname(output_path) or ".",
+        exist_ok=True,
+    )
+
+    try:
+        with sync_playwright() as p:
+            browser = p.chromium.launch(
+                headless=True,
+            )
+
+            page = browser.new_page(
+                viewport={
+                    "width": 1600,
+                    "height": 1200,
+                },
+                device_scale_factor=1,
+            )
+
+            print(
+                f"[screenshot] Opening {URL}"
+            )
+
+            page.goto(
+                URL,
+                wait_until="domcontentloaded",
+                timeout=60000,
+            )
+
+            # Wait for the actual fish-activity cells.
+            activity = page.locator(
+                "td.tabla_mareas_actividad"
+            )
+
+            activity.first.wait_for(
+                state="visible",
+                timeout=60000,
+            )
+
+            # The activity cell belongs to the exact monthly
+            # tide table we want. Walk up to its containing table.
+            table = activity.first.locator(
+                "xpath=ancestor::table[1]"
+            )
+
+            table.wait_for(
+                state="visible",
+                timeout=30000,
+            )
+
+            # Give web fonts/images/icons a moment to finish.
+            page.wait_for_timeout(2000)
+
+            table.screenshot(
+                path=output_path,
+                animations="disabled",
+            )
+
+            browser.close()
+
+        print(
+            f"[screenshot] Saved {output_path}"
+        )
+
+        return True
+
+    except Exception:
+        print(
+            "[screenshot] ERROR:"
+        )
+        traceback.print_exc()
+        return False
+
+
+# ============================================================
 # DOWNLOAD PAGE
 # ============================================================
 
@@ -851,6 +963,7 @@ def build_entry(
     coefficient,
     solunar,
     from_site,
+    image_url=None,
 ):
 
     date = day["date"]
@@ -900,7 +1013,20 @@ def build_entry(
         f"{major}"
     )
 
+    image_html = ""
+
+    if image_url:
+        image_html = (
+            "<p>"
+            f"<img src=\"{image_url}\" "
+            "alt=\"Tabel pasang surut dan aktivitas ikan Palihan\" "
+            "style=\"max-width:100%;height:auto;\">"
+            "</p>"
+        )
+
     description = (
+        image_html
+        +
         "<table border='1' "
         "cellpadding='4' "
         "cellspacing='0'>"
@@ -953,6 +1079,7 @@ def write_feed(
     coefficients,
     site_solunar,
     now_time,
+    image_url=None,
 ):
 
     from feedgen.feed import FeedGenerator
@@ -1003,6 +1130,7 @@ def write_feed(
                 coefficients.get(date),
                 solunar,
                 from_site,
+                image_url=image_url,
             )
         )
 
@@ -1151,6 +1279,44 @@ def main():
     )
 
     # --------------------------------------------------------
+    # Screenshot the rendered monthly tide table
+    # --------------------------------------------------------
+
+    image_url = None
+
+    if IMAGE_BASE_URL:
+
+        os.makedirs(
+            IMAGE_DIR,
+            exist_ok=True,
+        )
+
+        image_filename = (
+            f"palihan-{today.year:04d}-"
+            f"{today.month:02d}.png"
+        )
+
+        image_path = os.path.join(
+            IMAGE_DIR,
+            image_filename,
+        )
+
+        if screenshot_tide_table(
+            image_path
+        ):
+            image_url = (
+                f"{IMAGE_BASE_URL}/"
+                f"{image_filename}"
+            )
+
+    else:
+
+        print(
+            "[screenshot] IMAGE_BASE_URL is not set; "
+            "RSS will contain text only."
+        )
+
+    # --------------------------------------------------------
     # Generate RSS
     # --------------------------------------------------------
 
@@ -1160,6 +1326,7 @@ def main():
         coefficients,
         site_solunar,
         now_time,
+        image_url=image_url,
     )
 
 
