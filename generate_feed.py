@@ -1,12 +1,11 @@
 """
-Solunar Palihan - RSS generator.
+Solunar Palihan - RSS generator (versi gabungan saja).
 
-Satu kali jalan menghasilkan tiga feed:
-  palihan.xml           -> "Aktivitas Ikan" = koefisien pasang surut   (varian 1)
-  palihan_solunar.xml   -> "Aktivitas Ikan" = aktivitas solunar        (varian 2)
-  palihan_gabungan.xml  -> koefisien + solunar, dua kolom              (varian 3)
+Menulis SATU feed: palihan.xml, berisi koefisien pasang surut + aktivitas solunar
+dalam dua kolom. Nama file sama dengan sebelumnya, jadi link RSS dan workflow lama
+tidak perlu diubah.
 
-Pakai:  python generate_feed.py [--only koef|solunar|gabungan] [--sample page.html]
+Pakai:  python generate_feed.py [--sample page.html]
 """
 import argparse
 import datetime
@@ -208,10 +207,10 @@ def _win(t, delta):
     return f"{_hm(t - delta)} - {_hm(t + delta)}" if t else "-"
 
 
-def build_entry(mode, i, day, coef, sol, from_site):
+def build_entry(i, day, coef, sol, from_site):
     """
     Kembalikan (title, description_html).
-    mode: koef | solunar | gabungan; sol: teks level Indonesia; from_site: True bila dari tabel situs.
+    sol: teks level Indonesia; from_site: True bila dari tabel situs, False bila perkiraan (diberi tanda ≈).
     """
     d = day["date"]
     label = "Hari ini" if i == 0 else f"{HARI_INDO[d.weekday()]}, {d.day:02d} {BULAN_INDO[d.month]}"
@@ -219,24 +218,12 @@ def build_entry(mode, i, day, coef, sol, from_site):
     sol_txt = sol if from_site else f"≈{sol}"
     sol_note = "dari tabel tides4fishing" if from_site else "perkiraan hitung sendiri (data situs tidak terbaca)"
 
-    if mode == "koef":
-        head = f"Aktivitas Ikan: {coef} | " if coef else ""
-        top = f"<b>Aktivitas Ikan:</b> {coef}<br><br>" if coef else ""
-    elif mode == "solunar":
-        head = f"Aktivitas Ikan: {sol_txt} | "
-        top = f"<b>Aktivitas Ikan (solunar):</b> {sol_txt}<br><i>{sol_note}</i><br><br>"
-    else:  # gabungan
-        head = f"Koef {coef or '-'} · Solunar {sol_txt} | "
-        top = (
-            "<table border='1' cellpadding='4' cellspacing='0'>"
-            "<tr><th>Koefisien pasang surut</th><th>Aktivitas solunar</th></tr>"
-            f"<tr><td>{coef or '-'}</td><td>{sol_txt}</td></tr></table>"
-            f"<i>Solunar: {sol_note}</i><br><br>"
-        )
-
-    title = f"{label} | {head}{major}"
+    title = f"{label} | Koef {coef or '-'} · Solunar {sol_txt} | {major}"
     desc = (
-        f"{top}"
+        "<table border='1' cellpadding='4' cellspacing='0'>"
+        "<tr><th>Koefisien pasang surut</th><th>Aktivitas solunar</th></tr>"
+        f"<tr><td>{coef or '-'}</td><td>{sol_txt}</td></tr></table>"
+        f"<i>Solunar: {sol_note}</i><br><br>"
         f"<b>Waktu Utama (Major):</b><br>"
         f"• {_win(day['transit'], H1)}<br>• {_win(day['anti'], H1)}<br><br>"
         f"<b>Waktu Tambahan (Minor):</b><br>"
@@ -245,21 +232,20 @@ def build_entry(mode, i, day, coef, sol, from_site):
     return title, desc
 
 
-def write_feed(mode, path, days, coefs, site_sol, now_time):
+def write_feed(path, days, coefs, site_sol, now_time):
     from feedgen.feed import FeedGenerator
 
     fg = FeedGenerator()
-    fg.title({"koef": "Solunar Palihan (koefisien)", "solunar": "Solunar Palihan (solunar)",
-              "gabungan": "Solunar Palihan (koefisien + solunar)"}[mode])
+    fg.title("Solunar Palihan")
     fg.link(href=URL, rel="alternate")
-    fg.description("Prediksi jam makan ikan pantai selatan")
+    fg.description("Prediksi jam makan ikan pantai selatan: koefisien pasang surut + aktivitas solunar")
     fg.language("id")
 
     for i, day in enumerate(days):
         d = day["date"]
         from_site = d in site_sol
         sol = site_sol[d] if from_site else LEVELS_ID[estimate_solunar(day)]
-        title, desc = build_entry(mode, i, day, coefs.get(d), sol, from_site)
+        title, desc = build_entry(i, day, coefs.get(d), sol, from_site)
         fe = fg.add_entry()
         fe.id(f"palihan-{d.isoformat()}")
         fe.title(title)
@@ -272,7 +258,6 @@ def write_feed(mode, path, days, coefs, site_sol, now_time):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--only", choices=["koef", "solunar", "gabungan"])
     ap.add_argument("--sample", help="file HTML tersimpan untuk pengujian")
     a = ap.parse_args()
 
@@ -291,11 +276,7 @@ def main():
             print("[scrape] solunar situs tidak terbaca -> pakai perkiraan sendiri (tanda ≈)")
             print("[scrape] contoh baris tabel untuk diagnosa:", sample_row or "(tidak ada baris tabel)")
 
-    days = compute_days(today)
-    outputs = {"koef": "palihan.xml", "solunar": "palihan_solunar.xml", "gabungan": "palihan_gabungan.xml"}
-    for mode, path in outputs.items():
-        if a.only in (None, mode):
-            write_feed(mode, path, days, coefs, site_sol, now_time)
+    write_feed("palihan.xml", compute_days(today), coefs, site_sol, now_time)
 
 
 if __name__ == "__main__":
