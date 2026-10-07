@@ -1,12 +1,31 @@
 """
-Solunar Palihan - RSS generator (versi gabungan saja).
+Solunar Palihan - RSS generator.
 
-Menulis SATU feed: palihan.xml, berisi koefisien pasang surut + aktivitas solunar
-dalam dua kolom. Nama file sama dengan sebelumnya, jadi link RSS dan workflow lama
-tidak perlu diubah.
+Generates:
+    palihan.xml
 
-Pakai:  python generate_feed.py [--sample page.html]
+The feed contains:
+    - tidal coefficient
+    - solunar fish activity
+    - major solunar periods
+    - minor solunar periods
+
+Solunar activity mapping:
+
+    grey / empty fish -> rendah
+    1 fish             -> sedang
+    2 fish             -> tinggi
+    3 fish             -> sangat tinggi
+
+Usage:
+
+    python generate_feed.py
+
+For testing with a saved HTML page:
+
+    python generate_feed.py --sample page.html
 """
+
 import argparse
 import datetime
 import re
@@ -17,267 +36,921 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
+
+# ---------------------------------------------------------------------------
+# CONFIGURATION
+# ---------------------------------------------------------------------------
+
 URL = "https://tides4fishing.com/id/yogyakarta/palihan"
+
 TZ = ZoneInfo("Asia/Jakarta")
 UTC = datetime.timezone.utc
-H1, M30 = datetime.timedelta(hours=1), datetime.timedelta(minutes=30)
 
-HARI_INDO = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
-BULAN_INDO = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"]
-MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July",
-             "August", "September", "October", "November", "December"]
+H1 = datetime.timedelta(hours=1)
+M30 = datetime.timedelta(minutes=30)
 
-LEVELS_ID = ["rendah", "sedang", "tinggi", "sangat tinggi"]  # urut dari 0 sampai 3
+HARI_INDO = [
+    "Sen",
+    "Sel",
+    "Rab",
+    "Kam",
+    "Jum",
+    "Sab",
+    "Min",
+]
+
+BULAN_INDO = [
+    "",
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "Mei",
+    "Jun",
+    "Jul",
+    "Agt",
+    "Sep",
+    "Okt",
+    "Nov",
+    "Des",
+]
+
+MONTHS_EN = [
+    "January",
+    "February",
+    "March",
+    "April",
+    "May",
+    "June",
+    "July",
+    "August",
+    "September",
+    "October",
+    "November",
+    "December",
+]
+
+# Index = number of active fish.
+LEVELS_ID = [
+    "rendah",
+    "sedang",
+    "tinggi",
+    "sangat tinggi",
+]
+
+
+# ---------------------------------------------------------------------------
+# ACTIVITY MAPPINGS
+# ---------------------------------------------------------------------------
+
 STATUS_MAP = {
-    "very high": "sangat tinggi", "high": "tinggi", "average": "sedang", "low": "rendah",
-    "muy alta": "sangat tinggi", "alta": "tinggi", "media": "sedang", "baja": "rendah",
-    "sangat tinggi": "sangat tinggi", "tinggi": "tinggi", "sedang": "sedang", "rendah": "rendah",
+    # English
+    "very high": "sangat tinggi",
+    "very high activity": "sangat tinggi",
+
+    "high": "tinggi",
+    "high activity": "tinggi",
+
+    "average": "sedang",
+    "average activity": "sedang",
+
+    "low": "rendah",
+    "low activity": "rendah",
+
+    # Spanish / other possible Tides4Fishing translations
+    "muy alta": "sangat tinggi",
+    "muy alta actividad": "sangat tinggi",
+
+    "alta": "tinggi",
+    "alta actividad": "tinggi",
+
+    "media": "sedang",
+    "actividad media": "sedang",
+
+    "baja": "rendah",
+    "baja actividad": "rendah",
+
+    # Indonesian
+    "sangat tinggi": "sangat tinggi",
+    "sangat tinggi aktivitas": "sangat tinggi",
+
+    "tinggi": "tinggi",
+    "tinggi aktivitas": "tinggi",
+
+    "sedang": "sedang",
+    "sedang aktivitas": "sedang",
+
+    "rendah": "rendah",
+    "rendah aktivitas": "rendah",
 }
-LEVEL = r"very high|muy alta|sangat tinggi|high|average|low|alta|media|baja|tinggi|sedang|rendah"
 
-# ---------------------------------------------------------------- scraping
 
-ROW = re.compile(
-    r"\b(\d{1,2})\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b"
-    r"(?:(?!\b\d{1,2}\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b).){0,160}?"
-    r"\b(\d{1,3})\s+(" + LEVEL + r")\b",
+LEVEL_PATTERN = (
+    r"very high activity|"
+    r"very high|"
+    r"high activity|"
+    r"average activity|"
+    r"low activity|"
+    r"muy alta|"
+    r"alta|"
+    r"media|"
+    r"baja|"
+    r"sangat tinggi|"
+    r"tinggi|"
+    r"sedang|"
+    r"rendah|"
+    r"high|"
+    r"average|"
+    r"low"
+)
+
+LEVEL_ONLY = re.compile(
+    r"\b(" + LEVEL_PATTERN + r")\b",
     re.I,
 )
-DAYROW = re.compile(r"^(\d{1,2})\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b", re.I)
-COEF_CELL = re.compile(r"^\d{1,3}\s+(?:" + LEVEL + r")$", re.I)
-LEVEL_ONLY = re.compile(r"\b(" + LEVEL + r")\b", re.I)
 
+
+# ---------------------------------------------------------------------------
+# TABLE REGEX
+# ---------------------------------------------------------------------------
+
+ROW = re.compile(
+    r"\b(\d{1,2})\s+"
+    r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b"
+    r"(?:(?!\b\d{1,2}\s+"
+    r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b).){0,160}?"
+    r"\b(\d{1,3})\s+("
+    + LEVEL_PATTERN
+    + r")\b",
+    re.I,
+)
+
+DAYROW = re.compile(
+    r"^(\d{1,2})\s+"
+    r"(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b",
+    re.I,
+)
+
+COEF_CELL = re.compile(
+    r"^\d{1,3}\s+(?:"
+    + LEVEL_PATTERN
+    + r")$",
+    re.I,
+)
+
+
+# ---------------------------------------------------------------------------
+# HTML HELPERS
+# ---------------------------------------------------------------------------
 
 def flatten(html: str) -> str:
+    """
+    Convert HTML to normalized plain text.
+
+    Used mainly for coefficient parsing and month/year detection.
+    """
+
     if "</" in html:
         soup = BeautifulSoup(html, "html.parser")
-        for t in soup(["script", "style"]):
-            t.decompose()
+
+        for tag in soup(["script", "style"]):
+            tag.decompose()
+
         html = soup.get_text(" ")
+
     return re.sub(r"\s+", " ", html)
 
 
+def normalize(value) -> str:
+    """
+    Normalize an HTML attribute/string for searching.
+    """
+
+    if value is None:
+        return ""
+
+    if isinstance(value, (list, tuple)):
+        value = " ".join(str(x) for x in value)
+
+    return re.sub(r"\s+", " ", str(value)).strip().lower()
+
+
+def collect_attributes(tag) -> str:
+    """
+    Collect potentially useful information from an HTML element.
+
+    This is intentionally broad because Tides4Fishing can represent
+    the fish indicator using an image, CSS class, background image,
+    data attribute, etc.
+    """
+
+    values = []
+
+    interesting_attributes = [
+        "src",
+        "class",
+        "id",
+        "style",
+        "alt",
+        "title",
+        "aria-label",
+        "data-level",
+        "data-activity",
+        "data-value",
+        "data-rating",
+        "data-score",
+        "data-fish",
+        "data-icon",
+        "data-image",
+        "data-src",
+        "href",
+    ]
+
+    for attr in interesting_attributes:
+        value = tag.get(attr)
+
+        if value:
+            values.append(normalize(value))
+
+    return " ".join(values)
+
+
+# ---------------------------------------------------------------------------
+# MONTH/YEAR
+# ---------------------------------------------------------------------------
+
 def month_year_of_table(text: str, today: datetime.date):
+    """
+    Determine the month/year represented by the monthly tide table.
+    """
+
     start = text.lower().find("tide table")
-    scope = text[start:start + 6000] if start != -1 else text[:6000]
-    hits = re.findall(r"\b(" + "|".join(MONTHS_EN) + r")\s*,?\s*(20\d\d)\b", scope, re.I)
+
+    scope = (
+        text[start:start + 6000]
+        if start != -1
+        else text[:6000]
+    )
+
+    hits = re.findall(
+        r"\b("
+        + "|".join(MONTHS_EN)
+        + r")\s*,?\s*(20\d\d)\b",
+        scope,
+        re.I,
+    )
+
     if not hits:
         return today.year, today.month
-    (mon, yr), _ = Counter((m.capitalize(), y) for m, y in hits).most_common(1)[0]
-    return int(yr), MONTHS_EN.index(mon) + 1
 
+    counts = Counter(
+        (month.capitalize(), year)
+        for month, year in hits
+    )
+
+    (month, year), _ = counts.most_common(1)[0]
+
+    return int(year), MONTHS_EN.index(month) + 1
+
+
+# ---------------------------------------------------------------------------
+# COEFFICIENT PARSER
+# ---------------------------------------------------------------------------
 
 def parse_coefficients(text: str, today: datetime.date) -> dict:
-    """{date: 'koef (status)'} dari kolom COEFFICIENT."""
+    """
+    Return:
+
+        {
+            date: "64 (sedang)",
+            ...
+        }
+
+    from the COEFFICIENT column.
+    """
+
     year, month = month_year_of_table(text, today)
+
     out = {}
-    for m in ROW.finditer(text):
-        day, val, raw = int(m.group(1)), m.group(2), m.group(3).lower()
+
+    for match in ROW.finditer(text):
+        day = int(match.group(1))
+        value = match.group(2)
+        raw_status = match.group(3).lower()
+
         try:
-            d = datetime.date(year, month, day)
+            date = datetime.date(
+                year,
+                month,
+                day,
+            )
         except ValueError:
             continue
-        out.setdefault(d, f"{val} ({STATUS_MAP.get(raw, raw)})")
+
+        status = STATUS_MAP.get(
+            raw_status,
+            raw_status,
+        )
+
+        out.setdefault(
+            date,
+            f"{value} ({status})",
+        )
+
     return out
 
 
+# ---------------------------------------------------------------------------
+# SOLUNAR ICON PARSER
+# ---------------------------------------------------------------------------
+
+def parse_activity_text(cell) -> str | None:
+    """
+    Look for a textual activity value inside a solunar cell.
+
+    Examples:
+
+        high
+        high activity
+        average
+        low
+        very high
+    """
+
+    hints = []
+
+    # Visible text
+    hints.append(
+        normalize(cell.get_text(" ", strip=True))
+    )
+
+    # Cell attributes
+    hints.append(
+        collect_attributes(cell)
+    )
+
+    # Child element attributes
+    for tag in cell.find_all(True):
+        hints.append(
+            collect_attributes(tag)
+        )
+
+    combined = " ".join(hints)
+
+    match = LEVEL_ONLY.search(combined)
+
+    if not match:
+        return None
+
+    raw = match.group(1).lower()
+
+    return STATUS_MAP.get(raw)
+
+
+def fish_number_from_attributes(attributes: str):
+    """
+    Try to determine the number of fish represented by an icon.
+
+    This handles common patterns such as:
+
+        fish0
+        fish-0
+        fish_0
+        fish1
+        fish-1
+        fish_1
+        fish2
+        fish3
+
+    It also handles things such as:
+
+        activity3
+        activity_3
+        fish-active-3
+
+    Returns:
+        0..3
+        None if no number can be determined.
+    """
+
+    text = normalize(attributes)
+
+    # Explicit "grey/inactive/empty" indicators.
+    if any(
+        word in text
+        for word in (
+            "grey",
+            "gray",
+            "inactive",
+            "disabled",
+            "empty",
+            "none",
+            "off",
+        )
+    ):
+        if "fish" in text or "activity" in text:
+            return 0
+
+    # Fish followed/preceded by a level number.
+    patterns = [
+        r"fish[\s_-]*([0-3])\b",
+        r"\b([0-3])[\s_-]*fish\b",
+        r"fish[a-z_-]*([0-3])\b",
+        r"activity[\s_-]*([0-3])\b",
+        r"level[\s_-]*([0-3])\b",
+        r"rating[\s_-]*([0-3])\b",
+        r"score[\s_-]*([0-3])\b",
+    ]
+
+    for pattern in patterns:
+        match = re.search(pattern, text)
+
+        if match:
+            return int(match.group(1))
+
+    return None
+
+
+def parse_fish_icon(cell):
+    """
+    Inspect the actual HTML inside a solunar activity cell.
+
+    Returns:
+
+        0 -> rendah
+        1 -> sedang
+        2 -> tinggi
+        3 -> sangat tinggi
+
+    or None if the icon cannot be decoded.
+
+    We inspect IMG elements first, then other elements containing
+    fish/activity-related attributes.
+    """
+
+    # ---------------------------------------------------------------
+    # 1. Inspect images.
+    # ---------------------------------------------------------------
+
+    images = cell.find_all("img")
+
+    for img in images:
+        attributes = collect_attributes(img)
+
+        if not attributes:
+            continue
+
+        if (
+            "fish" not in attributes
+            and "activity" not in attributes
+            and "solunar" not in attributes
+        ):
+            continue
+
+        number = fish_number_from_attributes(
+            attributes
+        )
+
+        if number is not None:
+            return number
+
+    # ---------------------------------------------------------------
+    # 2. Inspect all descendants.
+    # ---------------------------------------------------------------
+
+    for tag in cell.find_all(True):
+        attributes = collect_attributes(tag)
+
+        if not attributes:
+            continue
+
+        if (
+            "fish" not in attributes
+            and "activity" not in attributes
+            and "solunar" not in attributes
+        ):
+            continue
+
+        number = fish_number_from_attributes(
+            attributes
+        )
+
+        if number is not None:
+            return number
+
+    # ---------------------------------------------------------------
+    # 3. Check the cell itself.
+    # ---------------------------------------------------------------
+
+    attributes = collect_attributes(cell)
+
+    number = fish_number_from_attributes(
+        attributes
+    )
+
+    if number is not None:
+        return number
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# SOLUNAR TABLE PARSER
+# ---------------------------------------------------------------------------
+
 def parse_solunar(html: str, today: datetime.date):
     """
-    {date: level} dari kolom SOLUNAR ACTIVITY pada tabel bulanan, plus contoh HTML satu baris
-    untuk diagnosa. Hanya membaca sel yang TEPAT SETELAH sel koefisien dan hanya kalau sel itu
-    memuat kata level (teks, alt, title, aria-label). Tidak pernah memakai nilai koefisien.
+    Extract solunar activity from the monthly table.
+
+    IMPORTANT:
+
+    The parser only looks at the cell immediately following the
+    coefficient cell.
+
+    This prevents accidentally reading unrelated solunar values
+    elsewhere on the page.
+
+    Priority:
+
+        1. Fish icon / HTML attributes
+        2. Text / alt / title / aria-label
+        3. Nothing -> caller uses astronomical fallback
+
+    Returns:
+
+        (
+            {
+                date: "rendah" / "sedang" / "tinggi" / "sangat tinggi"
+            },
+            sample_html
+        )
     """
-    out, sample = {}, None
+
+    out = {}
+    sample = None
+
     if "</" not in html:
         return out, sample
-    year, month = month_year_of_table(flatten(html), today)
-    soup = BeautifulSoup(html, "html.parser")
+
+    plain_text = flatten(html)
+
+    year, month = month_year_of_table(
+        plain_text,
+        today,
+    )
+
+    soup = BeautifulSoup(
+        html,
+        "html.parser",
+    )
+
     for tr in soup.find_all("tr"):
-        text = " ".join(tr.get_text(" ").split())
-        m = DAYROW.match(text)
-        if not m:
+
+        row_text = " ".join(
+            tr.get_text(" ").split()
+        )
+
+        day_match = DAYROW.match(row_text)
+
+        if not day_match:
             continue
-        cells = tr.find_all(["td", "th"])
-        idx = next((i for i, c in enumerate(cells)
-                    if COEF_CELL.match(" ".join(c.get_text(" ").split()))), None)
-        if idx is None or idx + 1 >= len(cells):
+
+        day_number = int(
+            day_match.group(1)
+        )
+
+        cells = tr.find_all(
+            ["td", "th"]
+        )
+
+        if not cells:
             continue
+
+        # -----------------------------------------------------------
+        # Find the COEFFICIENT cell.
+        # -----------------------------------------------------------
+
+        coefficient_index = None
+
+        for i, cell in enumerate(cells):
+
+            cell_text = " ".join(
+                cell.get_text(" ").split()
+            )
+
+            if COEF_CELL.match(cell_text):
+                coefficient_index = i
+                break
+
+        if coefficient_index is None:
+            continue
+
+        # The solunar activity cell should immediately follow
+        # the coefficient cell.
+        solunar_index = coefficient_index + 1
+
+        if solunar_index >= len(cells):
+            continue
+
+        cell = cells[solunar_index]
+
         if sample is None:
-            sample = str(tr)[:1500]
-        cell = cells[idx + 1]
-        hints = [cell.get_text(" ")]
-        hints += [str(t.get(a, "")) for t in cell.find_all(True) for a in ("alt", "title", "aria-label")]
-        hints += [str(cell.get(a, "")) for a in ("title", "aria-label")]
-        lm = LEVEL_ONLY.search(" ".join(hints))
-        if not lm:
+            sample = str(tr)[:5000]
+
+        # -----------------------------------------------------------
+        # First attempt: inspect fish icon markup.
+        # -----------------------------------------------------------
+
+        fish_number = parse_fish_icon(cell)
+
+        if fish_number is not None:
+
+            level = LEVELS_ID[
+                max(
+                    0,
+                    min(
+                        3,
+                        fish_number,
+                    ),
+                )
+            ]
+
+        else:
+
+            # -------------------------------------------------------
+            # Second attempt: textual information.
+            # -------------------------------------------------------
+
+            level = parse_activity_text(
+                cell
+            )
+
+        if level is None:
             continue
+
         try:
-            d = datetime.date(year, month, int(m.group(1)))
+            date = datetime.date(
+                year,
+                month,
+                day_number,
+            )
         except ValueError:
             continue
-        out.setdefault(d, STATUS_MAP[lm.group(1).lower()])
+
+        out.setdefault(
+            date,
+            level,
+        )
+
+        # Useful diagnostics while GitHub Actions runs.
+        print(
+            f"[solunar] "
+            f"{date.isoformat()} -> {level}"
+            + (
+                f" (fish={fish_number})"
+                if fish_number is not None
+                else " (text)"
+            )
+        )
+
     return out, sample
 
 
+# ---------------------------------------------------------------------------
+# HTTP FETCH
+# ---------------------------------------------------------------------------
+
 def fetch_page(sample_file=None):
+    """
+    Download Tides4Fishing page.
+
+    If --sample is supplied, use that local HTML file instead.
+    """
+
     if sample_file:
-        return open(sample_file, encoding="utf-8").read()
-    try:
-        resp = requests.get(
-            URL, timeout=30,
-            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                     "Accept-Language": "en;q=0.9"},
+
+        print(
+            f"[scrape] menggunakan sample: {sample_file}"
         )
-        print(f"[scrape] HTTP {resp.status_code}, {len(resp.text)} karakter")
-        if resp.status_code != 200:
-            print("[scrape] respons awal:", resp.text[:300].replace("\n", " "))
+
+        with open(
+            sample_file,
+            encoding="utf-8",
+        ) as file:
+            return file.read()
+
+    try:
+
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 "
+                "(Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 "
+                "(KHTML, like Gecko) "
+                "Chrome/124.0.0.0 "
+                "Safari/537.36"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept": (
+                "text/html,"
+                "application/xhtml+xml,"
+                "application/xml;q=0.9,"
+                "*/*;q=0.8"
+            ),
+        }
+
+        response = requests.get(
+            URL,
+            timeout=30,
+            headers=headers,
+        )
+
+        print(
+            f"[scrape] HTTP "
+            f"{response.status_code}, "
+            f"{len(response.text)} karakter"
+        )
+
+        if response.status_code != 200:
+
+            print(
+                "[scrape] respons awal:",
+                response.text[:500]
+                .replace("\n", " "),
+            )
+
             return None
-        return resp.text
+
+        return response.text
+
     except Exception:
+
         print("[scrape] ERROR:")
         traceback.print_exc()
+
         return None
 
 
-# ------------------------------------------------------- astronomi (ephem)
+# ---------------------------------------------------------------------------
+# ASTRONOMICAL FALLBACK
+# ---------------------------------------------------------------------------
 
-def compute_days(today: datetime.date, n: int = 14):
+def compute_days(
+    today: datetime.date,
+    n: int = 14,
+):
     """
-    Waktu bulan/matahari per hari. Jendela hari = 00:00-24:00 WIB. (Skrip lama memakai
-    '2026/10/07' yang berarti 00:00 UTC = 07:00 WIB, sehingga kejadian dini hari
-    jatuh ke hari berikutnya.)
+    Calculate moon/sun events for the next n days.
+
+    This is ONLY used for:
+        - major/minor period times
+        - fallback solunar rating if the website cannot be parsed
+
+    Coordinates:
+        Palihan, Kulon Progo
     """
+
     import ephem
 
-    obs = ephem.Observer()
-    obs.lat, obs.lon, obs.elevation = "-7.91", "110.07", 5  # Palihan, Kulon Progo
+    observer = ephem.Observer()
+
+    observer.lat = "-7.91"
+    observer.lon = "110.07"
+    observer.elevation = 5
+
     days = []
+
     for i in range(n):
-        d = today + datetime.timedelta(days=i)
-        start = datetime.datetime.combine(d, datetime.time(0), tzinfo=TZ)
-        end = start + datetime.timedelta(days=1)
-        obs.date = start.astimezone(UTC).replace(tzinfo=None)
 
-        def ev(fn, body):
+        date = (
+            today
+            + datetime.timedelta(days=i)
+        )
+
+        start = datetime.datetime.combine(
+            date,
+            datetime.time(0),
+            tzinfo=TZ,
+        )
+
+        end = (
+            start
+            + datetime.timedelta(days=1)
+        )
+
+        observer.date = (
+            start
+            .astimezone(UTC)
+            .replace(tzinfo=None)
+        )
+
+        def event(
+            function,
+            body,
+        ):
             try:
-                t = fn(body)
-            except (ephem.NeverUpError, ephem.AlwaysUpError):
-                return None
-            dt = ephem.Date(t).datetime().replace(tzinfo=UTC).astimezone(TZ)
-            return dt if start <= dt < end else None
+                event_time = function(body)
 
-        moon, sun = ephem.Moon(), ephem.Sun()
-        ref = ephem.Date(float(obs.date) + 0.5)  # tengah hari
-        dist = min(abs(float(ref) - float(f(ref))) for f in (
-            ephem.previous_new_moon, ephem.next_new_moon,
-            ephem.previous_full_moon, ephem.next_full_moon))
-        days.append({
-            "date": d, "dist": dist,
-            "transit": ev(obs.next_transit, moon), "anti": ev(obs.next_antitransit, moon),
-            "rise": ev(obs.next_rising, moon), "set": ev(obs.next_setting, moon),
-            "sunrise": ev(obs.next_rising, sun), "sunset": ev(obs.next_setting, sun),
-        })
+            except (
+                ephem.NeverUpError,
+                ephem.AlwaysUpError,
+            ):
+                return None
+
+            dt = (
+                ephem.Date(event_time)
+                .datetime()
+                .replace(tzinfo=UTC)
+                .astimezone(TZ)
+            )
+
+            if start <= dt < end:
+                return dt
+
+            return None
+
+        moon = ephem.Moon()
+        sun = ephem.Sun()
+
+        # Noon reference for moon-phase distance.
+        reference = ephem.Date(
+            float(observer.date) + 0.5
+        )
+
+        distance = min(
+            abs(
+                float(reference)
+                - float(function(reference))
+            )
+            for function in (
+                ephem.previous_new_moon,
+                ephem.next_new_moon,
+                ephem.previous_full_moon,
+                ephem.next_full_moon,
+            )
+        )
+
+        days.append(
+            {
+                "date": date,
+                "dist": distance,
+
+                "transit": event(
+                    observer.next_transit,
+                    moon,
+                ),
+
+                "anti": event(
+                    observer.next_antitransit,
+                    moon,
+                ),
+
+                "rise": event(
+                    observer.next_rising,
+                    moon,
+                ),
+
+                "set": event(
+                    observer.next_setting,
+                    moon,
+                ),
+
+                "sunrise": event(
+                    observer.next_rising,
+                    sun,
+                ),
+
+                "sunset": event(
+                    observer.next_setting,
+                    sun,
+                ),
+            }
+        )
+
     return days
 
 
 def estimate_solunar(day: dict) -> int:
     """
-    PERKIRAAN sendiri (0-3), dipakai hanya kalau situs tidak terbaca.
-    Dasar: jarak ke bulan baru/purnama (teori solunar: terkuat di sekitar keduanya),
-    +1 bila periode major/minor bertepatan dengan matahari terbit/terbenam.
-    Ambang batas adalah heuristik, BUKAN rumus tides4fishing.
+    Approximate solunar rating.
+
+    This is NOT Tides4Fishing's calculation.
+
+    It is only used if the website's solunar value
+    cannot be extracted.
+
+    Returns:
+
+        0 -> rendah
+        1 -> sedang
+        2 -> tinggi
+        3 -> sangat tinggi
     """
-    dist = day["dist"]
-    base = 2 if dist <= 2 else 1 if dist <= 5.5 else 0
-    periods = [(t - H1, t + H1) for t in (day["transit"], day["anti"]) if t]
-    periods += [(t - M30, t + M30) for t in (day["rise"], day["set"]) if t]
-    suns = [(t - M30, t + M30) for t in (day["sunrise"], day["sunset"]) if t]
-    bonus = any(a0 < b1 and b0 < a1 for a0, a1 in periods for b0, b1 in suns)
-    return min(3, base + (1 if bonus else 0))
 
+    distance = day["dist"]
 
-# ----------------------------------------------------------- format entri
+    if distance <= 2:
+        base = 2
 
-def _hm(t):
-    return t.strftime("%H:%M") if t else "-"
-
-
-def _win(t, delta):
-    return f"{_hm(t - delta)} - {_hm(t + delta)}" if t else "-"
-
-
-def build_entry(i, day, coef, sol, from_site):
-    """
-    Kembalikan (title, description_html).
-    sol: teks level Indonesia; from_site: True bila dari tabel situs, False bila perkiraan (diberi tanda ≈).
-    """
-    d = day["date"]
-    label = "Hari ini" if i == 0 else f"{HARI_INDO[d.weekday()]}, {d.day:02d} {BULAN_INDO[d.month]}"
-    major = f"Major: {_hm(day['transit'])} & {_hm(day['anti'])}"
-    sol_txt = sol if from_site else f"≈{sol}"
-    sol_note = "dari tabel tides4fishing" if from_site else "perkiraan hitung sendiri (data situs tidak terbaca)"
-
-    title = f"{label} | Koef {coef or '-'} · Solunar {sol_txt} | {major}"
-    desc = (
-        "<table border='1' cellpadding='4' cellspacing='0'>"
-        "<tr><th>Koefisien pasang surut</th><th>Aktivitas solunar</th></tr>"
-        f"<tr><td>{coef or '-'}</td><td>{sol_txt}</td></tr></table>"
-        f"<i>Solunar: {sol_note}</i><br><br>"
-        f"<b>Waktu Utama (Major):</b><br>"
-        f"• {_win(day['transit'], H1)}<br>• {_win(day['anti'], H1)}<br><br>"
-        f"<b>Waktu Tambahan (Minor):</b><br>"
-        f"• {_win(day['rise'], M30)} (Terbit)<br>• {_win(day['set'], M30)} (Terbenam)"
-    )
-    return title, desc
-
-
-def write_feed(path, days, coefs, site_sol, now_time):
-    from feedgen.feed import FeedGenerator
-
-    fg = FeedGenerator()
-    fg.title("Solunar Palihan")
-    fg.link(href=URL, rel="alternate")
-    fg.description("Prediksi jam makan ikan pantai selatan: koefisien pasang surut + aktivitas solunar")
-    fg.language("id")
-
-    for i, day in enumerate(days):
-        d = day["date"]
-        from_site = d in site_sol
-        sol = site_sol[d] if from_site else LEVELS_ID[estimate_solunar(day)]
-        title, desc = build_entry(i, day, coefs.get(d), sol, from_site)
-        fe = fg.add_entry()
-        fe.id(f"palihan-{d.isoformat()}")
-        fe.title(title)
-        fe.link(href=URL)
-        fe.description(desc)
-        fe.pubDate(now_time - datetime.timedelta(hours=i))
-    fg.rss_file(path, pretty=True)
-    print(f"[feed] {path} ditulis")
-
-
-def main():
-    ap = argparse.ArgumentParser()
-    ap.add_argument("--sample", help="file HTML tersimpan untuk pengujian")
-    a = ap.parse_args()
-
-    now_time = datetime.datetime.now(TZ)
-    today = now_time.date()
-
-    raw = fetch_page(a.sample)
-    coefs, site_sol = {}, {}
-    if raw:
-        coefs = parse_coefficients(flatten(raw), today)
-        site_sol, sample_row = parse_solunar(raw, today)
-        print(f"[scrape] koefisien: {len(coefs)} hari | solunar dari situs: {len(site_sol)} hari")
-        if not coefs:
-            print("[scrape] PERINGATAN: koefisien tidak terbaca - layout situs berubah / diblokir")
-        if not site_sol:
-            print("[scrape] solunar situs tidak terbaca -> pakai perkiraan sendiri (tanda ≈)")
-            print("[scrape] contoh baris tabel untuk diagnosa:", sample_row or "(tidak ada baris tabel)")
-
-    write_feed("palihan.xml", compute_days(today), coefs, site_sol, now_time)
-
-
-if __name__ == "__main__":
-    main()
+    elif distance <= 5.5:
+        b
