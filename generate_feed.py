@@ -1,42 +1,55 @@
+"""
+Solunar Palihan - RSS generator.
+
+Satu kali jalan menghasilkan tiga feed:
+  palihan.xml           -> "Aktivitas Ikan" = koefisien pasang surut   (varian 1)
+  palihan_solunar.xml   -> "Aktivitas Ikan" = aktivitas solunar        (varian 2)
+  palihan_gabungan.xml  -> koefisien + solunar, dua kolom              (varian 3)
+
+Pakai:  python generate_feed.py [--only koef|solunar|gabungan] [--sample page.html]
+"""
+import argparse
 import datetime
 import re
-import sys
 import traceback
 from collections import Counter
 from zoneinfo import ZoneInfo
 
-import ephem
 import requests
 from bs4 import BeautifulSoup
-from feedgen.feed import FeedGenerator
 
 URL = "https://tides4fishing.com/id/yogyakarta/palihan"
 TZ = ZoneInfo("Asia/Jakarta")
+UTC = datetime.timezone.utc
+H1, M30 = datetime.timedelta(hours=1), datetime.timedelta(minutes=30)
 
 HARI_INDO = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"]
 BULAN_INDO = ["", "Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agt", "Sep", "Okt", "Nov", "Des"]
 MONTHS_EN = ["January", "February", "March", "April", "May", "June", "July",
              "August", "September", "October", "November", "December"]
 
+LEVELS_ID = ["rendah", "sedang", "tinggi", "sangat tinggi"]  # urut dari 0 sampai 3
 STATUS_MAP = {
     "very high": "sangat tinggi", "high": "tinggi", "average": "sedang", "low": "rendah",
     "muy alta": "sangat tinggi", "alta": "tinggi", "media": "sedang", "baja": "rendah",
     "sangat tinggi": "sangat tinggi", "tinggi": "tinggi", "sedang": "sedang", "rendah": "rendah",
 }
+LEVEL = r"very high|muy alta|sangat tinggi|high|average|low|alta|media|baja|tinggi|sedang|rendah"
 
-# Satu baris tabel: "6 Tue 5:22 h 17:34 h 4:57 h 1.5 m ... 69 average"
-# Tidak bergantung pada id/class HTML, hanya pada teks tabel. Bagian tengah dilarang
-# memuat awal baris lain supaya tidak "meminjam" koefisien dari baris berikutnya.
+# ---------------------------------------------------------------- scraping
+
 ROW = re.compile(
     r"\b(\d{1,2})\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b"
     r"(?:(?!\b\d{1,2}\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b).){0,160}?"
-    r"\b(\d{1,3})\s+(very high|high|average|low|muy alta|alta|media|baja|sangat tinggi|tinggi|sedang|rendah)\b",
+    r"\b(\d{1,3})\s+(" + LEVEL + r")\b",
     re.I,
 )
+DAYROW = re.compile(r"^(\d{1,2})\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b", re.I)
+COEF_CELL = re.compile(r"^\d{1,3}\s+(?:" + LEVEL + r")$", re.I)
+LEVEL_ONLY = re.compile(r"\b(" + LEVEL + r")\b", re.I)
 
 
 def flatten(html: str) -> str:
-    """HTML -> satu baris teks. Teks biasa juga boleh (untuk pengujian)."""
     if "</" in html:
         soup = BeautifulSoup(html, "html.parser")
         for t in soup(["script", "style"]):
@@ -46,7 +59,6 @@ def flatten(html: str) -> str:
 
 
 def month_year_of_table(text: str, today: datetime.date):
-    """Bulan tabel = bulan yang paling sering disebut di sekitar judul tabel."""
     start = text.lower().find("tide table")
     scope = text[start:start + 6000] if start != -1 else text[:6000]
     hits = re.findall(r"\b(" + "|".join(MONTHS_EN) + r")\s*,?\s*(20\d\d)\b", scope, re.I)
@@ -57,7 +69,7 @@ def month_year_of_table(text: str, today: datetime.date):
 
 
 def parse_coefficients(text: str, today: datetime.date) -> dict:
-    """Kembalikan {date: 'koef (status)'}. Kunci pakai tanggal LENGKAP, bukan nomor hari."""
+    """{date: 'koef (status)'} dari kolom COEFFICIENT."""
     year, month = month_year_of_table(text, today)
     out = {}
     for m in ROW.finditer(text):
@@ -66,97 +78,224 @@ def parse_coefficients(text: str, today: datetime.date) -> dict:
             d = datetime.date(year, month, day)
         except ValueError:
             continue
-        out.setdefault(d, f"{val} ({STATUS_MAP.get(raw, raw)})")  # baris pertama menang
+        out.setdefault(d, f"{val} ({STATUS_MAP.get(raw, raw)})")
     return out
 
 
-def fetch_coefficients(today: datetime.date, sample_file: str | None = None) -> dict:
+def parse_solunar(html: str, today: datetime.date):
+    """
+    {date: level} dari kolom SOLUNAR ACTIVITY pada tabel bulanan, plus contoh HTML satu baris
+    untuk diagnosa. Hanya membaca sel yang TEPAT SETELAH sel koefisien dan hanya kalau sel itu
+    memuat kata level (teks, alt, title, aria-label). Tidak pernah memakai nilai koefisien.
+    """
+    out, sample = {}, None
+    if "</" not in html:
+        return out, sample
+    year, month = month_year_of_table(flatten(html), today)
+    soup = BeautifulSoup(html, "html.parser")
+    for tr in soup.find_all("tr"):
+        text = " ".join(tr.get_text(" ").split())
+        m = DAYROW.match(text)
+        if not m:
+            continue
+        cells = tr.find_all(["td", "th"])
+        idx = next((i for i, c in enumerate(cells)
+                    if COEF_CELL.match(" ".join(c.get_text(" ").split()))), None)
+        if idx is None or idx + 1 >= len(cells):
+            continue
+        if sample is None:
+            sample = str(tr)[:1500]
+        cell = cells[idx + 1]
+        hints = [cell.get_text(" ")]
+        hints += [str(t.get(a, "")) for t in cell.find_all(True) for a in ("alt", "title", "aria-label")]
+        hints += [str(cell.get(a, "")) for a in ("title", "aria-label")]
+        lm = LEVEL_ONLY.search(" ".join(hints))
+        if not lm:
+            continue
+        try:
+            d = datetime.date(year, month, int(m.group(1)))
+        except ValueError:
+            continue
+        out.setdefault(d, STATUS_MAP[lm.group(1).lower()])
+    return out, sample
+
+
+def fetch_page(sample_file=None):
+    if sample_file:
+        return open(sample_file, encoding="utf-8").read()
     try:
-        if sample_file:
-            raw = open(sample_file, encoding="utf-8").read()
-        else:
-            resp = requests.get(
-                URL, timeout=30,
-                headers={
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-                                  "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-                    "Accept-Language": "en;q=0.9",
-                },
-            )
-            print(f"[scrape] HTTP {resp.status_code}, {len(resp.text)} karakter")
-            if resp.status_code != 200:
-                print("[scrape] respons awal:", resp.text[:300].replace("\n", " "))
-                return {}
-            raw = resp.text
-        coefs = parse_coefficients(flatten(raw), today)
-        print(f"[scrape] koefisien ditemukan untuk {len(coefs)} hari")
-        if not coefs:
-            print("[scrape] PERINGATAN: tabel tidak terbaca - layout situs mungkin berubah / diblokir")
-        return coefs
+        resp = requests.get(
+            URL, timeout=30,
+            headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                     "Accept-Language": "en;q=0.9"},
+        )
+        print(f"[scrape] HTTP {resp.status_code}, {len(resp.text)} karakter")
+        if resp.status_code != 200:
+            print("[scrape] respons awal:", resp.text[:300].replace("\n", " "))
+            return None
+        return resp.text
     except Exception:
         print("[scrape] ERROR:")
         traceback.print_exc()
-        return {}
+        return None
 
 
-def main():
-    sample = sys.argv[1] if len(sys.argv) > 1 else None
+# ------------------------------------------------------- astronomi (ephem)
+
+def compute_days(today: datetime.date, n: int = 14):
+    """
+    Waktu bulan/matahari per hari. Jendela hari = 00:00-24:00 WIB. (Skrip lama memakai
+    '2026/10/07' yang berarti 00:00 UTC = 07:00 WIB, sehingga kejadian dini hari
+    jatuh ke hari berikutnya.)
+    """
+    import ephem
+
+    obs = ephem.Observer()
+    obs.lat, obs.lon, obs.elevation = "-7.91", "110.07", 5  # Palihan, Kulon Progo
+    days = []
+    for i in range(n):
+        d = today + datetime.timedelta(days=i)
+        start = datetime.datetime.combine(d, datetime.time(0), tzinfo=TZ)
+        end = start + datetime.timedelta(days=1)
+        obs.date = start.astimezone(UTC).replace(tzinfo=None)
+
+        def ev(fn, body):
+            try:
+                t = fn(body)
+            except (ephem.NeverUpError, ephem.AlwaysUpError):
+                return None
+            dt = ephem.Date(t).datetime().replace(tzinfo=UTC).astimezone(TZ)
+            return dt if start <= dt < end else None
+
+        moon, sun = ephem.Moon(), ephem.Sun()
+        ref = ephem.Date(float(obs.date) + 0.5)  # tengah hari
+        dist = min(abs(float(ref) - float(f(ref))) for f in (
+            ephem.previous_new_moon, ephem.next_new_moon,
+            ephem.previous_full_moon, ephem.next_full_moon))
+        days.append({
+            "date": d, "dist": dist,
+            "transit": ev(obs.next_transit, moon), "anti": ev(obs.next_antitransit, moon),
+            "rise": ev(obs.next_rising, moon), "set": ev(obs.next_setting, moon),
+            "sunrise": ev(obs.next_rising, sun), "sunset": ev(obs.next_setting, sun),
+        })
+    return days
+
+
+def estimate_solunar(day: dict) -> int:
+    """
+    PERKIRAAN sendiri (0-3), dipakai hanya kalau situs tidak terbaca.
+    Dasar: jarak ke bulan baru/purnama (teori solunar: terkuat di sekitar keduanya),
+    +1 bila periode major/minor bertepatan dengan matahari terbit/terbenam.
+    Ambang batas adalah heuristik, BUKAN rumus tides4fishing.
+    """
+    dist = day["dist"]
+    base = 2 if dist <= 2 else 1 if dist <= 5.5 else 0
+    periods = [(t - H1, t + H1) for t in (day["transit"], day["anti"]) if t]
+    periods += [(t - M30, t + M30) for t in (day["rise"], day["set"]) if t]
+    suns = [(t - M30, t + M30) for t in (day["sunrise"], day["sunset"]) if t]
+    bonus = any(a0 < b1 and b0 < a1 for a0, a1 in periods for b0, b1 in suns)
+    return min(3, base + (1 if bonus else 0))
+
+
+# ----------------------------------------------------------- format entri
+
+def _hm(t):
+    return t.strftime("%H:%M") if t else "-"
+
+
+def _win(t, delta):
+    return f"{_hm(t - delta)} - {_hm(t + delta)}" if t else "-"
+
+
+def build_entry(mode, i, day, coef, sol, from_site):
+    """
+    Kembalikan (title, description_html).
+    mode: koef | solunar | gabungan; sol: teks level Indonesia; from_site: True bila dari tabel situs.
+    """
+    d = day["date"]
+    label = "Hari ini" if i == 0 else f"{HARI_INDO[d.weekday()]}, {d.day:02d} {BULAN_INDO[d.month]}"
+    major = f"Major: {_hm(day['transit'])} & {_hm(day['anti'])}"
+    sol_txt = sol if from_site else f"≈{sol}"
+    sol_note = "dari tabel tides4fishing" if from_site else "perkiraan hitung sendiri (data situs tidak terbaca)"
+
+    if mode == "koef":
+        head = f"Aktivitas Ikan: {coef} | " if coef else ""
+        top = f"<b>Aktivitas Ikan:</b> {coef}<br><br>" if coef else ""
+    elif mode == "solunar":
+        head = f"Aktivitas Ikan: {sol_txt} | "
+        top = f"<b>Aktivitas Ikan (solunar):</b> {sol_txt}<br><i>{sol_note}</i><br><br>"
+    else:  # gabungan
+        head = f"Koef {coef or '-'} · Solunar {sol_txt} | "
+        top = (
+            "<table border='1' cellpadding='4' cellspacing='0'>"
+            "<tr><th>Koefisien pasang surut</th><th>Aktivitas solunar</th></tr>"
+            f"<tr><td>{coef or '-'}</td><td>{sol_txt}</td></tr></table>"
+            f"<i>Solunar: {sol_note}</i><br><br>"
+        )
+
+    title = f"{label} | {head}{major}"
+    desc = (
+        f"{top}"
+        f"<b>Waktu Utama (Major):</b><br>"
+        f"• {_win(day['transit'], H1)}<br>• {_win(day['anti'], H1)}<br><br>"
+        f"<b>Waktu Tambahan (Minor):</b><br>"
+        f"• {_win(day['rise'], M30)} (Terbit)<br>• {_win(day['set'], M30)} (Terbenam)"
+    )
+    return title, desc
+
+
+def write_feed(mode, path, days, coefs, site_sol, now_time):
+    from feedgen.feed import FeedGenerator
 
     fg = FeedGenerator()
-    fg.title("Solunar Palihan")
+    fg.title({"koef": "Solunar Palihan (koefisien)", "solunar": "Solunar Palihan (solunar)",
+              "gabungan": "Solunar Palihan (koefisien + solunar)"}[mode])
     fg.link(href=URL, rel="alternate")
     fg.description("Prediksi jam makan ikan pantai selatan")
     fg.language("id")
 
-    observer = ephem.Observer()
-    observer.lat = "-7.91"  # Palihan, Kulon Progo
-    observer.lon = "110.07"
-    observer.elevation = 5
-
-    now_time = datetime.datetime.now(TZ)
-    today = now_time.date()
-    coefs = fetch_coefficients(today, sample)
-
-    for i in range(14):
-        target_date = today + datetime.timedelta(days=i)
-        observer.date = target_date.strftime("%Y/%m/%d")
-
-        moon = ephem.Moon()
-        moon.compute(observer)
-        m_transit = ephem.localtime(observer.next_transit(moon)).astimezone(TZ)
-        m_antitransit = ephem.localtime(observer.next_antitransit(moon)).astimezone(TZ)
-        m_rise = ephem.localtime(observer.next_rising(moon)).astimezone(TZ)
-        m_set = ephem.localtime(observer.next_setting(moon)).astimezone(TZ)
-
-        # Tidak ada angka karangan lagi: kalau hari ini tidak ada di tabel, koefisien dikosongkan.
-        coef = coefs.get(target_date)
-        coef_title = f"Aktivitas Ikan: {coef} | " if coef else ""
-        coef_desc = f"<b>Aktivitas Ikan:</b> {coef}<br><br>" if coef else ""
-
-        tanggal_str = f"{HARI_INDO[target_date.weekday()]}, {target_date.day:02d} {BULAN_INDO[target_date.month]}"
-        date_label = "Hari ini" if i == 0 else tanggal_str
-
-        title = f"{date_label} | {coef_title}Major: {m_transit:%H:%M} & {m_antitransit:%H:%M}"
-        hm = lambda d: d.strftime("%H:%M")
-        h1, m30 = datetime.timedelta(hours=1), datetime.timedelta(minutes=30)
-        desc = (
-            f"{coef_desc}"
-            f"<b>Waktu Utama (Major):</b><br>"
-            f"• {hm(m_transit - h1)} - {hm(m_transit + h1)}<br>"
-            f"• {hm(m_antitransit - h1)} - {hm(m_antitransit + h1)}<br><br>"
-            f"<b>Waktu Tambahan (Minor):</b><br>"
-            f"• {hm(m_rise - m30)} - {hm(m_rise + m30)} (Terbit)<br>"
-            f"• {hm(m_set - m30)} - {hm(m_set + m30)} (Terbenam)"
-        )
-
+    for i, day in enumerate(days):
+        d = day["date"]
+        from_site = d in site_sol
+        sol = site_sol[d] if from_site else LEVELS_ID[estimate_solunar(day)]
+        title, desc = build_entry(mode, i, day, coefs.get(d), sol, from_site)
         fe = fg.add_entry()
-        fe.id(f"palihan-{target_date.isoformat()}")
+        fe.id(f"palihan-{d.isoformat()}")
         fe.title(title)
         fe.link(href=URL)
         fe.description(desc)
-        fe.pubDate(now_time - datetime.timedelta(hours=i))  # "Hari ini" tetap paling atas
+        fe.pubDate(now_time - datetime.timedelta(hours=i))
+    fg.rss_file(path, pretty=True)
+    print(f"[feed] {path} ditulis")
 
-    fg.rss_file("palihan.xml", pretty=True)
+
+def main():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--only", choices=["koef", "solunar", "gabungan"])
+    ap.add_argument("--sample", help="file HTML tersimpan untuk pengujian")
+    a = ap.parse_args()
+
+    now_time = datetime.datetime.now(TZ)
+    today = now_time.date()
+
+    raw = fetch_page(a.sample)
+    coefs, site_sol = {}, {}
+    if raw:
+        coefs = parse_coefficients(flatten(raw), today)
+        site_sol, sample_row = parse_solunar(raw, today)
+        print(f"[scrape] koefisien: {len(coefs)} hari | solunar dari situs: {len(site_sol)} hari")
+        if not coefs:
+            print("[scrape] PERINGATAN: koefisien tidak terbaca - layout situs berubah / diblokir")
+        if not site_sol:
+            print("[scrape] solunar situs tidak terbaca -> pakai perkiraan sendiri (tanda ≈)")
+            print("[scrape] contoh baris tabel untuk diagnosa:", sample_row or "(tidak ada baris tabel)")
+
+    days = compute_days(today)
+    outputs = {"koef": "palihan.xml", "solunar": "palihan_solunar.xml", "gabungan": "palihan_gabungan.xml"}
+    for mode, path in outputs.items():
+        if a.only in (None, mode):
+            write_feed(mode, path, days, coefs, site_sol, now_time)
 
 
 if __name__ == "__main__":
