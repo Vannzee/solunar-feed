@@ -76,7 +76,6 @@ MONTHS_EN = [
     "December",
 ]
 
-# Correct fish mapping.
 LEVELS_ID = [
     "rendah",
     "sedang",
@@ -92,17 +91,13 @@ LEVELS_ID = [
 STATUS_MAP = {
     "very high": "sangat tinggi",
     "very high activity": "sangat tinggi",
-
     "high": "tinggi",
     "high activity": "tinggi",
-
     "average": "sedang",
     "average activity": "sedang",
-
     "low": "rendah",
     "low activity": "rendah",
 
-    # Indonesian
     "sangat tinggi": "sangat tinggi",
     "tinggi": "tinggi",
     "sedang": "sedang",
@@ -411,7 +406,7 @@ def parse_solunar(
         )
 
         # Exact activity cell.
-        # This cell has rowspan="2".
+        # The cell has rowspan="2".
         activity_cells = tr.find_all(
             "td",
             class_="tabla_mareas_actividad",
@@ -461,6 +456,82 @@ def parse_solunar(
         )
 
     return out, sample
+
+
+# ============================================================
+# DOWNLOAD PAGE
+# ============================================================
+
+def fetch_page(
+    sample_file=None,
+):
+    """
+    Download Tides4Fishing HTML.
+
+    --sample can be used to test with a saved HTML file.
+    """
+
+    if sample_file:
+
+        print(
+            f"[scrape] Using sample: "
+            f"{sample_file}"
+        )
+
+        with open(
+            sample_file,
+            encoding="utf-8",
+        ) as file:
+
+            return file.read()
+
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 "
+            "(Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 "
+            "(KHTML, like Gecko) "
+            "Chrome/154.0.0.0 "
+            "Safari/537.36"
+        ),
+        "Accept-Language": (
+            "en-US,en;q=0.9"
+        ),
+        "Accept": (
+            "text/html,"
+            "application/xhtml+xml,"
+            "application/xml;q=0.9,"
+            "*/*;q=0.8"
+        ),
+    }
+
+    try:
+
+        response = requests.get(
+            URL,
+            headers=headers,
+            timeout=30,
+        )
+
+        print(
+            f"[scrape] HTTP "
+            f"{response.status_code} "
+            f"({len(response.text)} bytes)"
+        )
+
+        response.raise_for_status()
+
+        return response.text
+
+    except Exception:
+
+        print(
+            "[scrape] ERROR:"
+        )
+
+        traceback.print_exc()
+
+        return None
 
 
 # ============================================================
@@ -768,10 +839,6 @@ def build_entry(
             "lokal karena data situs tidak terbaca."
         )
 
-    # --------------------------------------------------------
-    # Waktu utama
-    # --------------------------------------------------------
-
     major_1 = _win(
         day["transit"],
         H1,
@@ -782,10 +849,6 @@ def build_entry(
         H1,
     )
 
-    # --------------------------------------------------------
-    # Waktu tambahan
-    # --------------------------------------------------------
-
     minor_1 = _win(
         day["rise"],
         M30,
@@ -795,13 +858,6 @@ def build_entry(
         day["set"],
         M30,
     )
-
-    # --------------------------------------------------------
-    # Tentukan waktu terbaik
-    #
-    # Untuk sekarang kita prioritaskan waktu Major.
-    # Jika Major tidak tersedia, gunakan Minor.
-    # --------------------------------------------------------
 
     best_times = []
 
@@ -828,24 +884,21 @@ def build_entry(
             )
 
     best_text = (
-        "<br>".join(
-            best_times
-        )
+        "<br>".join(best_times)
         if best_times
         else "-"
     )
 
     title = (
         f"{label} | "
-        f"🎣 Aktivitas Ikan: "
+        f"Aktivitas Ikan: "
         f"{solunar_text} | "
-        f"⭐ Waktu Terbaik: "
+        f"Waktu Terbaik: "
         f"{best_times[0] if best_times else '-'}"
     )
 
     description = (
         "<h3>🎣 Aktivitas Ikan</h3>"
-
         f"<b>{solunar_text.upper()}</b>"
         "<br>"
         f"<i>{solunar_note}</i>"
@@ -858,7 +911,6 @@ def build_entry(
         "<br><br>"
 
         "<h3>🌙 Waktu Utama (Major)</h3>"
-
         f"{major_1}"
         "<br>"
         f"{major_2}"
@@ -866,19 +918,13 @@ def build_entry(
         "<br><br>"
 
         "<h3>🌙 Waktu Tambahan (Minor)</h3>"
-
-        f"{minor_1} "
-        "(Bulan terbit)"
-
+        f"{minor_1} (Bulan terbit)"
         "<br>"
-
-        f"{minor_2} "
-        "(Bulan terbenam)"
+        f"{minor_2} (Bulan terbenam)"
 
         "<br><br>"
 
         "<h3>☀️ Matahari</h3>"
-
         f"Terbit: {_hm(day['sunrise'])}"
         "<br>"
         f"Terbenam: {_hm(day['sunset'])}"
@@ -886,14 +932,13 @@ def build_entry(
         "<br><br>"
 
         "<h3>🌊 Koefisien Pasang Surut</h3>"
-
         f"{coefficient or '-'}"
 
         "<br><br>"
 
         "<small>"
-        "Catatan: waktu di atas adalah waktu "
-        "aktivitas solunar, bukan waktu pasang/surut."
+        "Waktu solunar di atas bukan waktu "
+        "pasang atau surut."
         "</small>"
     )
 
@@ -1041,10 +1086,6 @@ def main():
 
     if raw:
 
-        # ----------------------------------------------------
-        # Parse coefficient
-        # ----------------------------------------------------
-
         coefficients = (
             parse_coefficients(
                 raw,
@@ -1057,10 +1098,6 @@ def main():
             f"Coefficient days: "
             f"{len(coefficients)}"
         )
-
-        # ----------------------------------------------------
-        # Parse actual fish activity
-        # ----------------------------------------------------
 
         site_solunar, sample = (
             parse_solunar(
